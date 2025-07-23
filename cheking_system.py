@@ -37,7 +37,7 @@ def check_network():
 def check_wifi():
     try:
         result = subprocess.run(['netsh', 'wlan', 'show', 'interfaces'], capture_output=True, text=True)
-        if "Состояние" in result.stdout or "State" in result.stdout:  # Для разных языков
+        if "Состояние" in result.stdout or "State" in result.stdout:  
             return 1
         return 0
     except:
