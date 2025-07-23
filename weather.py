@@ -1,7 +1,7 @@
 import requests
 
 
-city1 = 'Сыктывкар'
+city1 = #введите свой город ''
 
 url1 = 'https://api.openweathermap.org/data/2.5/weather?q='+city1+'&units=metric&lang=ru&appid=79d1ca96933b0328e1c7e3e7a26cb347'
 
