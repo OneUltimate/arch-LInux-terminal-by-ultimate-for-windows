@@ -24,24 +24,14 @@ def cputemp():
     
 def get_gpu_info():
     w = wmi.WMI()
-    for gpu in w.Win32_VideoController():
-        # print(f"Видеокарта: {gpu.Name}")
-        # print(f"Разрешение: {gpu.CurrentHorizontalResolution}x{gpu.CurrentVerticalResolution}")
-        # print(f"Видеопамять: {gpu.AdapterRAM // (1024**2)} МБ")
+    for gpu in w.Win32_VideoController():       
         return gpu.Name
 
 def get_gpu_info_resolution():
     w = wmi.WMI()
     for gpu in w.Win32_VideoController():
-        # print(f"Видеокарта: {gpu.Name}")
-        # print(f"Разрешение: {gpu.CurrentHorizontalResolution}x{gpu.CurrentVerticalResolution}")
-        # print(f"Видеопамять: {gpu.AdapterRAM // (1024**2)} МБ")
         resslution = str(gpu.CurrentHorizontalResolution) + 'x' + str(gpu.CurrentVerticalResolution)
         return resslution
-
-
-
-
 
 def monitor_memory():
     try:
