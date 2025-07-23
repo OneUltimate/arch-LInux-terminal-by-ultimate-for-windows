@@ -140,7 +140,7 @@ class ArchTerminal(QWidget):
             scrollbar.setValue(old_scroll_pos)
     
     def update_line(self, prefix, new_value, color=None):
-        """Общий метод для обновления строк с префиксом"""
+        # регаем функцию обновления для динамичных строк
         text = self.terminal.toPlainText()
         pos = text.rfind(prefix)
         
@@ -181,10 +181,10 @@ class ArchTerminal(QWidget):
         
         mem = psutil.virtual_memory()
         mem_used = mem.used / (1024**3) 
-        mem_total = mem.total / (1024**3) * 2
+        mem_total = mem.total / (1024**3) 
         
-        cpu_info = 'amd ryzen 5 1600 8 CPU 3.20GHZ' if mem_used > 5 else nameCPU
-        gpu_info = 'rtx2060' if mem_used > 5 else get_gpu_info()
+        cpu_info = nameCPU
+        gpu_info = get_gpu_info()
         
         cpu_temp = cputemp()
         temperature = temp1()
