@@ -36,7 +36,6 @@ def check_network():
 
 def check_wifi():
     try:
-        # Проверка Wi-Fi адаптера и подключения
         result = subprocess.run(['netsh', 'wlan', 'show', 'interfaces'], capture_output=True, text=True)
         if "Состояние" in result.stdout or "State" in result.stdout:  # Для разных языков
             return 1
@@ -73,7 +72,6 @@ def check_os():
 
 def check_usb():
     try:
-        # Проверка подключенных USB устройств
         result = subprocess.run(['powershell', 'Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match "^USB" }'], 
                               capture_output=True, text=True)
         usb_devices = [line for line in result.stdout.split('\n') if line.strip()]
