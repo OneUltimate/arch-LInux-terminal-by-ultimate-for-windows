@@ -39,10 +39,10 @@ def monitor_memory():
         memory = psutil.virtual_memory()
         used_gb = memory.used / 1024 / 1024
         total_gb = memory.total / (1024 ** 3)
-        percent = memory.percent / 2
+        percent = memory.percent 
             
-        # print(f"RAM: {percent:.1f}% used | {used_gb:.2f} ГБ / {total_gb:.2f} ГБ")
-        rez = str(round(used_gb)) + 'mb / 11900 mb'
+    
+        rez = str(round(used_gb)) + "/" + str(round(total_gb))
         return str(rez)
         
     except:
