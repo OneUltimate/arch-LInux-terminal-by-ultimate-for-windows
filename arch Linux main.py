@@ -12,7 +12,6 @@ import subprocess
 
 from weather import *
 from cpuinformation import *
-from testirovka import *
 from cheking_system import *
 from proxy_checker import * 
 
