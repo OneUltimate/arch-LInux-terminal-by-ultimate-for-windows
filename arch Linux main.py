@@ -232,7 +232,6 @@ class ArchTerminal(QWidget):
             return "N/A"
     
     def setup_timers(self):
-        # Настройка всех таймеров обновления
         self.update_clock()
         self.update_ip_name()
         self.update_system_info()
