@@ -7,7 +7,7 @@ def get_system_proxy():
             proxy_enable = winreg.QueryValueEx(key, "ProxyEnable")[0]
             proxy_server = winreg.QueryValueEx(key, "ProxyServer")[0]
             if proxy_enable:
-                if proxy_server == '127.0.0.1:8888': #измените в зависимости отсвоих настроек прокси 
+                if proxy_server == '127.0.0.1:8888': #измените в зависимости от своих настроек прокси 
                     return 'True ' + str(f'{proxy_server} - local' )
                 
                 return 'True ' + str(f'{proxy_server}')
