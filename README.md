@@ -7,4 +7,4 @@ zakos/replica for the arch Linux distribution
   
 *libraries used:* PyQT5, platform, psutil, datetime, time, subprocess, requests, winreg, wmi, os, socket
 
-At the moment, the CPU temperature is detected using **OpenHardwareMonitor** (vmi). Install it from the app's official website for full terminal functionality
+At the moment, the CPU temperature is detected using 'OpenHardwareMonitor' (vmi). Install it from the app's official website for full terminal functionality
