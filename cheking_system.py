@@ -84,14 +84,8 @@ def check_usb():
 def check_inf_windows():
     check_inf_windows = []
     
-    
-    
     check_inf_windows += str(check_cpu()) + str(check_ram()) + str(check_disk()) + str(check_network()) + str(check_os()) + str(check_usb())
-    
     check_inf_windows = ''.join(check_inf_windows)
-    
-    
-    
     check_inf_windows = check_inf_windows.replace('1', '■')
     check_inf_windows = check_inf_windows.replace('0', ' ')
         
