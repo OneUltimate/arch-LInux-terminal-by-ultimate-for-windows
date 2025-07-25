@@ -139,7 +139,7 @@ class ArchTerminal(QWidget):
             scrollbar.setValue(old_scroll_pos)
     
     def update_line(self, prefix, new_value, color=None):
-        # регаем функцию обновления для динамичных строк
+        # регаем функцию обновления для динамичных строк (авто)
         text = self.terminal.toPlainText()
         pos = text.rfind(prefix)
         
