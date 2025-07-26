@@ -1,3 +1,4 @@
+
 from winreg import *
 import wmi
 import psutil
@@ -15,7 +16,7 @@ def cputemp():
         temperature_infos = w.Sensor()
         for sensor in temperature_infos:
             if sensor.SensorType == 'Temperature' and 'CPU' in sensor.Name:
-                print(f"{sensor.Name}: {sensor.Value} °C")
+                
                 sensorV = str(round(sensor.Value)) + '°'
                 return sensorV
     except:
@@ -39,12 +40,17 @@ def monitor_memory():
         used_gb = memory.used / 1024 / 1024
         total_gb = memory.total / (1024 ** 2)
         percent = memory.percent 
-            
-    
+        
         rez = str(round(used_gb)) + "mb / " + str(round(total_gb)) + 'mb'
         return str(rez)
         
     except:
         return 'n/a'
 
+def get_battery_info():
+    try:
+        battery = psutil.sensors_battery()
+        return str(f'{battery.percent} %')
+    except:
+        return 'N/A'
 
