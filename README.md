@@ -10,6 +10,7 @@ zakos/replica for the arch Linux distribution
 
 At the moment, the CPU temperature is detected using [OpenHardwareMonitor](https://openhardwaremonitor.org/) (vmi). Install it from the app's official website for full terminal functionality.
 
-Data is updated (system, Internet) once a minute in the name of optimization, when, in turn, time and RAM are once every 1 second and 5 seconds, respectively.
+Data is updated (system, Internet) once a minute in the name of optimization, when, in turn, time and RAM are once every 1 second and 5 seconds, respectively.8
+
 
 **python used 3.12.4+**
