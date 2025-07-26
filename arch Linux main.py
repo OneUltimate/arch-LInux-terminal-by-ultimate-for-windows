@@ -1,87 +1,21 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QTextEdit, QVBoxLayout, 
                             QScrollBar, QLabel, QMainWindow, QPushButton, 
-                            QHBoxLayout)
-from PyQt5.QtCore import QTimer, QDateTime, Qt
+                            QHBoxLayout, QLineEdit)
+from PyQt5.QtCore import QTimer, QDateTime, Qt, QProcess
 from PyQt5.QtGui import QTextCursor, QColor, QTextCharFormat, QFont
 import platform
 import psutil
 import datetime
 import time
 import subprocess
+import os
 
 from weather import *
-from cpuinformation import *
+from pc_information import *
 from cheking_system import *
 from proxy_checker import * 
-
-TITLE_BAR_STYLE = """
-    border: 1px solid #34E2E2;
-    border-bottom: none;
-    background: #000000;
-"""
-
-BUTTON_STYLE = """
-    QPushButton {
-        background: transparent;
-        color: white;
-        font-size: 14px;
-        border: none;
-    }
-"""
-
-CLOSE_BUTTON_HOVER = """
-    QPushButton:hover {
-        background: #E81123;
-    }
-"""
-
-MINIMIZE_BUTTON_HOVER = """
-    QPushButton:hover {
-        background: #2D2D2D;
-    }
-"""
-
-TITLE_STYLE = """
-    color: #068B9A;
-    font-family: Arial;
-    font-size: 16px;
-    font-weight: bold;
-    padding-left: 2px;
-"""
-
-WINDOW_STYLE = """
-    QWidget {
-        border: 1px solid #34E2E2;
-        background: #000000;
-    }
-"""
-
-class CustomTitleBar(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedHeight(30)
-        self.setStyleSheet(TITLE_BAR_STYLE)
-        
-        self.close_btn = QPushButton("✕")
-        self.close_btn.setFixedSize(30, 30)
-        self.close_btn.setStyleSheet(BUTTON_STYLE + CLOSE_BUTTON_HOVER)
-        self.close_btn.clicked.connect(parent.close)
-        
-        self.minimize_btn = QPushButton("—")
-        self.minimize_btn.setFixedSize(30, 30)
-        self.minimize_btn.setStyleSheet(BUTTON_STYLE + MINIMIZE_BUTTON_HOVER)
-        self.minimize_btn.clicked.connect(parent.showMinimized)
-        
-        self.title = QLabel("ultimatum@arch")
-        self.title.setStyleSheet(TITLE_STYLE)
-        
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.title)
-        layout.addStretch()
-        layout.addWidget(self.minimize_btn)
-        layout.addWidget(self.close_btn)
+from config import * 
 
 class ArchTerminal(QWidget):
     def __init__(self):
@@ -97,30 +31,189 @@ class ArchTerminal(QWidget):
             'normal': QColor('#D3D7CF'),
             'time': QColor('#34E2E2'),
             'bg': QColor('#000000'),
-            'network': QColor('#34E2E2')
+            'network': QColor('#34E2E2'),
+            'input': QColor('#FFFFFF'),
+            'prompt': QColor("#068B9A")
         }
         
         self.font = QFont("Consolas", 10)
         self.last_ip = ""
         self.last_network = ""
+        self.command_history = []
+        self.history_index = 0
+        self.current_directory = os.getcwd()
         
         self.init_ui()
         self.display_system_info()
         self.setup_timers()
+        self.show_prompt()
         
     def init_ui(self):
         layout = QVBoxLayout()
         layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(layout)
-        
+       
         self.terminal = QTextEdit()
-        self.terminal.setReadOnly(True)
+        self.terminal.setReadOnly(False)  
         self.terminal.setFont(self.font)
-        self.terminal.setStyleSheet(f"background-color: {self.colors['bg'].name()};")
+        self.terminal.setStyleSheet(f"background-color: {self.colors['bg'].name()}; color: {self.colors['normal'].name()};")
         self.terminal.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
+        
+        self.input_line = QLineEdit()
+        self.input_line.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {self.colors['bg'].name()};
+                color: {self.colors['input'].name()};
+                border: 1px solid {self.colors['highlight'].name()};
+                font-family: Consolas;
+                font-size: 10pt;
+            }}
+        """)
+        self.input_line.returnPressed.connect(self.execute_command)
+        
         layout.addWidget(self.terminal)
-    
+        layout.addWidget(self.input_line)
+        
+      
+        self.process = QProcess(self)
+        self.process.readyReadStandardOutput.connect(self.handle_stdout)
+        self.process.readyReadStandardError.connect(self.handle_stderr)
+        self.process.finished.connect(self.command_finished)
+        
+    def show_prompt(self):
+       
+        cursor = self.terminal.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        
+        format = QTextCharFormat()
+        format.setForeground(self.colors['prompt'])
+        cursor.setCharFormat(format)
+        
+        user = os.getenv('USERNAME') or os.getenv('USER') or 'user'
+        host = platform.node()
+        cursor.insertText(f"{user}@{host}:~{self.current_directory}$")
+        
+        
+        self.terminal.setTextCursor(cursor)
+        self.terminal.ensureCursorVisible()
+        
+    def execute_command(self):
+        command = self.input_line.text().strip()
+        self.input_line.clear()
+        
+        if not command:
+            self.show_prompt()
+            return
+            
+        self.command_history.append(command)
+        self.history_index = len(self.command_history)
+        
+        
+        self.add_line(f"{command}", 'input')
+        
+        
+        if command.lower() in ['exit', 'quit']:
+            QApplication.quit()
+        elif command.startswith('cd '):
+            self.change_directory(command[3:].strip())
+        elif command == 'clear':
+            self.terminal.clear()
+            self.show_prompt()
+        elif command == 'help':
+            self.show_help()
+        else:
+           
+            self.process.start(command)
+            
+    def change_directory(self, path):
+        try:
+            if not path:
+                path = os.path.expanduser('~')
+                
+            new_path = os.path.abspath(os.path.join(self.current_directory, path))
+            if os.path.isdir(new_path):
+                self.current_directory = new_path
+                self.add_line(f"Changed directory to: {self.current_directory}", 'normal')
+            else:
+                self.add_line(f"Directory not found: {new_path}", 'highlight')
+        except Exception as e:
+            self.add_line(f"Error changing directory: {str(e)}", 'highlight')
+            
+        self.show_prompt()
+        
+    def show_help(self):
+        help_text = """
+Available commands:
+- cd [directory]  : Change directory
+- clear           : Clear the terminal
+- exit/quit       : Exit the application
+- help            : Show this help message
+Any other command will be executed in the system shell
+"""
+        self.add_line(help_text, 'normal')
+        self.show_prompt()
+        
+    def handle_stdout(self):
+        data = self.process.readAllStandardOutput()
+        output = self.safe_decode_windows(data) if platform.system() == "Windows" else self.safe_decode(data)
+        self.add_line(output, 'normal')
+
+    def handle_stderr(self):
+        data = self.process.readAllStandardError()
+        error = self.safe_decode_windows(data) if platform.system() == "Windows" else self.safe_decode(data)
+        self.add_line(error, 'highlight')
+
+    def safe_decode_windows(self, byte_data):
+        
+        try:
+           
+            import ctypes
+            codepage = ctypes.windll.kernel32.GetConsoleOutputCP()
+            return bytes(byte_data).decode(f'cp{codepage}')
+        except:
+            
+            encodings = ['cp866', 'cp1251', 'utf-8']
+            for encoding in encodings:
+                try:
+                    return bytes(byte_data).decode(encoding)
+                except UnicodeDecodeError:
+                    continue
+        
+        return bytes(byte_data).decode('utf-8', errors='replace')
+
+    def safe_decode(self, byte_data):
+       
+        encodings = ['utf-8', 'latin-1', 'iso-8859-1']
+        for encoding in encodings:
+            try:
+                return bytes(byte_data).decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        return bytes(byte_data).decode('utf-8', errors='replace')
+        
+    def command_finished(self):
+        self.show_prompt()
+        
+    def add_line(self, text, color=None, auto_scroll=True):
+        scrollbar = self.terminal.verticalScrollBar()
+        old_scroll_pos = scrollbar.value()
+        
+        cursor = self.terminal.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        
+        if color:
+            format = QTextCharFormat()
+            format.setForeground(self.colors[color])
+            cursor.setCharFormat(format)
+        
+        cursor.insertText(text + "\n")
+        
+        if not auto_scroll:
+            scrollbar.setValue(old_scroll_pos)
+        else:
+            scrollbar.setValue(scrollbar.maximum())
+            
     def add_line(self, text, color=None, auto_scroll=False):
         scrollbar = self.terminal.verticalScrollBar()
         old_scroll_pos = scrollbar.value()
@@ -182,7 +275,7 @@ class ArchTerminal(QWidget):
         mem_used = mem.used / (1024**3) 
         mem_total = mem.total / (1024**3) 
         
-        cpu_info = nameCPU
+        cpu_info = str(nameCPU[:-2])
         gpu_info = get_gpu_info()
         
         cpu_temp = cputemp()
@@ -191,6 +284,7 @@ class ArchTerminal(QWidget):
         cpuresinfo = get_gpu_info_resolution()
         cheksys = check_inf_windows()
         proxy_tf = get_system_proxy()
+        battery_info = get_battery_info()
         
         self.add_line("--------------------------------", 'highlight')
         self.add_line(f'{os_info}', auto_scroll=False)
@@ -200,7 +294,7 @@ class ArchTerminal(QWidget):
         self.update_line("Time: ", QDateTime.currentDateTime().toString("HH:mm:ss"), 'time')
         
         self.add_line(f"                *                     |Uptime: {uptime_str}", auto_scroll=False)
-        self.add_line(f"               ***                    |Host: {platform.node()}", auto_scroll=False)    
+        self.add_line(f"               ***                    |Host: {platform.node()}, {battery_info}", auto_scroll=False)    
         self.add_line(f"              *****                   |Resolution: {cpuresinfo}", auto_scroll=False)
         self.add_line(f"             *******                  |Shell: {shell}", auto_scroll=False)
         self.update_line("System: ", cheksys or "N/A", 'highlight')
