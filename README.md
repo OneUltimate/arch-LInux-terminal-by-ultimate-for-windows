@@ -15,6 +15,7 @@ Data is updated (system, Internet) once a minute in the name of optimization, wh
 
 The logic of attachment is built 24.07.2025
 Integrated command line function 27.07.2025
-
+Integrated tg-bot 27.07.2025
+Integrated logger 28.07.2025
 
 **python used 3.12.4+**
