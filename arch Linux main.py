@@ -146,7 +146,7 @@ class ArchTerminal(QWidget):
             self.process.start(command)            
         if command == "startbot":
             self.start_telegram_bot()
-        if command == "restart":                                                #перевести команды в отдельный файл + их логгирование 
+        if command == "restart":                                              
             self.display_system_info()
             
         if command == "help dsi":
@@ -200,17 +200,13 @@ class ArchTerminal(QWidget):
         uptime = datetime.timedelta(seconds=time.time()-psutil.boot_time())
         uptime_str = str(uptime).split('.')[0]
         
-        temperature_infos = w.Sensor()
-        for sensor in temperature_infos:
-            if sensor.SensorType == 'Temperature' and 'CPU' in sensor.Name:
-                
-                sensorV = str(round(sensor.Value)) + '°'
+        
         
         info = [
             f"🖥️ Система: {platform.system()} {platform.release()}",
             f"⏱️ Время работы: {uptime_str}",
             f"💾 Память: {psutil.virtual_memory().percent}% used {monitor_memory()}",
-            f"🔥 CPU: {psutil.cpu_percent()}% | {psutil.cpu_count()} cores, {temper_cpu} {sensorV}",
+            f"🔥 CPU: {psutil.cpu_percent()}% | {psutil.cpu_count()} cores, {temper_cpu}",
             f"🌐 IP: {self.get_ip_address()},",
             f"🔋 Батарея: {get_battery_info()}"  
         ]
