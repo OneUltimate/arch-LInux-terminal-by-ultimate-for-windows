@@ -10,12 +10,22 @@ import datetime
 import time
 import subprocess
 import os
+from telegram import Update, Bot
+from telegram.ext import Updater, CommandHandler, CallbackContext
+import threading
+import logging
 
-from weather import *
-from pc_information import *
-from cheking_system import *
-from proxy_checker import * 
-from config import * 
+from modules_plus.weather import *
+from modules_plus.pc_information import *
+from modules_plus.cheking_system import *
+from modules_plus.proxy_checker import * 
+from modules_plus.config import * 
+from help_text import * 
+
+
+
+BOT_TOKEN = os.getenv('Token')
+logging.basicConfig(filename='terminal.log', level=logging.INFO)
 
 class ArchTerminal(QWidget):
     def __init__(self):
@@ -47,6 +57,10 @@ class ArchTerminal(QWidget):
         self.display_system_info()
         self.setup_timers()
         self.show_prompt()
+        
+        self.telegram_bot = None  
+        self.bot_token = BOT_TOKEN
+        self.chat_id = None
         
     def init_ui(self):
         layout = QVBoxLayout()
@@ -93,13 +107,19 @@ class ArchTerminal(QWidget):
         user = os.getenv('USERNAME') or os.getenv('USER') or 'user'
         host = platform.node()
         cursor.insertText(f"{user}@{host}:~{self.current_directory}$")
-        
+        self.add_line('\nwelcome to arch terminal', 'input')
         
         self.terminal.setTextCursor(cursor)
         self.terminal.ensureCursorVisible()
         
     def execute_command(self):
+        
+        
         command = self.input_line.text().strip()
+        
+        logging.basicConfig(filename='terminal.log', level=logging.INFO)
+        logging.info(f"Command executed: {command}")
+        
         self.input_line.clear()
         
         if not command:
@@ -123,8 +143,78 @@ class ArchTerminal(QWidget):
         elif command == 'help':
             self.show_help()
         else:
+            self.process.start(command)            
+        if command == "startbot":
+            self.start_telegram_bot()
+        if command == "restart":                                                #перевести команды в отдельный файл + их логгирование 
+            self.display_system_info()
+            
+        if command == "help dsi":
+            self.add_line('display system information (DSI) - main function of the script', 'normal')
+            
+        logging.info(command)
+        
+            
+    def start_telegram_bot(self):
+        
+        if self.telegram_bot:
+            self.add_line("Бот уже запущен!", 'highlight')
+            return
+
+        self.add_line("Запускаю Telegram'бота...", 'normal')
+        
+        def bot_thread():
+            updater = Updater(self.bot_token)
+            dispatcher = updater.dispatcher
+            
            
-            self.process.start(command)
+            def info_handler(update: Update, context: CallbackContext):
+                if str(update.effective_chat.id) != str(self.chat_id):
+                    update.message.reply_text("Доступ запрещён!")
+                    return
+                
+                system_info = self.get_system_info()  
+                update.message.reply_text(system_info)
+
+            dispatcher.add_handler(CommandHandler("info", info_handler))
+            
+            
+            def start_handler(update: Update, context: CallbackContext):
+                if not self.chat_id:
+                    self.chat_id = update.effective_chat.id
+                    update.message.reply_text("Бот активирован! Напишите /info для данных.")
+                else:
+                    update.message.reply_text("Ошибка")
+
+            dispatcher.add_handler(CommandHandler("start", start_handler))
+            
+            updater.start_polling()
+            self.telegram_bot = updater
+            self.add_line("Бот запущен!", 'normal')
+
+        threading.Thread(target=bot_thread, daemon=True).start()
+    
+    def get_system_info(self):
+        
+        temper_cpu = cputemp()
+        uptime = datetime.timedelta(seconds=time.time()-psutil.boot_time())
+        uptime_str = str(uptime).split('.')[0]
+        
+        temperature_infos = w.Sensor()
+        for sensor in temperature_infos:
+            if sensor.SensorType == 'Temperature' and 'CPU' in sensor.Name:
+                
+                sensorV = str(round(sensor.Value)) + '°'
+        
+        info = [
+            f"🖥️ Система: {platform.system()} {platform.release()}",
+            f"⏱️ Время работы: {uptime_str}",
+            f"💾 Память: {psutil.virtual_memory().percent}% used {monitor_memory()}",
+            f"🔥 CPU: {psutil.cpu_percent()}% | {psutil.cpu_count()} cores, {temper_cpu} {sensorV}",
+            f"🌐 IP: {self.get_ip_address()},",
+            f"🔋 Батарея: {get_battery_info()}"  
+        ]
+        return "\n".join(info)
             
     def change_directory(self, path):
         try:
@@ -143,14 +233,9 @@ class ArchTerminal(QWidget):
         self.show_prompt()
         
     def show_help(self):
-        help_text = """
-Available commands:
-- cd [directory]  : Change directory
-- clear           : Clear the terminal
-- exit/quit       : Exit the application
-- help            : Show this help message
-Any other command will be executed in the system shell
-"""
+        
+        help_text = HELP_TEXT
+        
         self.add_line(help_text, 'normal')
         self.show_prompt()
         
@@ -193,6 +278,7 @@ Any other command will be executed in the system shell
         return bytes(byte_data).decode('utf-8', errors='replace')
         
     def command_finished(self):
+        self.process.deleteLater()
         self.show_prompt()
         
     def add_line(self, text, color=None, auto_scroll=True):
@@ -214,25 +300,10 @@ Any other command will be executed in the system shell
         else:
             scrollbar.setValue(scrollbar.maximum())
             
-    def add_line(self, text, color=None, auto_scroll=False):
-        scrollbar = self.terminal.verticalScrollBar()
-        old_scroll_pos = scrollbar.value()
-        
-        cursor = self.terminal.textCursor()
-        cursor.movePosition(QTextCursor.End)
-        
-        if color:
-            format = QTextCharFormat()
-            format.setForeground(self.colors[color])
-            cursor.setCharFormat(format)
-        
-        cursor.insertText(text + "\n")
-        
-        if not auto_scroll:
-            scrollbar.setValue(old_scroll_pos)
+   
     
     def update_line(self, prefix, new_value, color=None):
-        # регаем функцию обновления для динамичных строк (авто)
+        
         text = self.terminal.toPlainText()
         pos = text.rfind(prefix)
         
@@ -315,7 +386,7 @@ Any other command will be executed in the system shell
             else:  
                 return subprocess.getoutput("hostname -I").split()[0].strip()
         except:
-            return "Unknown"
+            return "N/A"
     
     def get_network_name(self):
         try:
