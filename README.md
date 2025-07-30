@@ -16,7 +16,7 @@ At the moment, the CPU temperature is detected using [OpenHardwareMonitor](https
 Data is updated (system, Internet) once a minute in the name of optimization, when, in turn, time and RAM are once every 1 second and 5 seconds, respectively.
 
 The logic of attachment is built 24.07.2025
-Integrated command line function 27.07.2025
+Integrated command line function 26.07.2025
 Integrated tg-bot 27.07.2025
 Integrated logger 28.07.2025
 
