@@ -7,5 +7,7 @@ Available commands:
 - exit/quit       : Exit the application
 - help            : Show this help message
 - restart         : Run DSI >>> (/'help dsi')
+- startbot        : start tg bot
+
 Any other command will be executed in the system shell
 """
