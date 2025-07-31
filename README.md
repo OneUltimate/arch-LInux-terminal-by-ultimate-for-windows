@@ -1,5 +1,5 @@
 # arch-LInux-terminal-by-ultimate-for-windows, prealphver01
-![Terminal Screenshot](scr.png.png) 
+![Terminal Screenshot](scr.png) 
 zakos/replica for the arch Linux distribution
 
 !start file - **arch Linux main.py**
