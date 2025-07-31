@@ -1,8 +1,7 @@
 # arch-LInux-terminal-by-ultimate-for-windows, prealphver05
 ![Terminal Screenshot](scrns.png) 
 
-ru 
-
+*ru* 
 Терминал в стиле Arch Linux для Windows с мониторингом системы и Telegram-ботом
 
 ## 📌 Особенности
