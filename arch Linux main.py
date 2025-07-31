@@ -14,6 +14,7 @@ from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import threading
 import logging
+from dotenv import load_dotenv 
 
 from modules_plus.weather import *
 from modules_plus.pc_information import *
@@ -22,7 +23,7 @@ from modules_plus.proxy_checker import *
 from modules_plus.config import * 
 from help_text import * 
 
-
+load_dotenv()
 
 BOT_TOKEN = os.getenv('Token')
 logging.basicConfig(filename='terminal.log', level=logging.INFO)
@@ -34,15 +35,17 @@ class ArchTerminal(QWidget):
         self.setWindowTitle("ultimatum@arch")
         self.setGeometry(100, 100, 1000, 415)
         
+        self.allowed_chat_id = os.getenv('ALLOWED_CHAT_ID')
+        
         self.colors = {
             'text': QColor('#00FF00'),
             'title': QColor("#068B9A"),
             'highlight': QColor('#34E2E2'),
-            'normal': QColor('#D3D7CF'),
+            'normal': QColor("#54EBFF"),
             'time': QColor('#34E2E2'),
             'bg': QColor('#000000'),
             'network': QColor('#34E2E2'),
-            'input': QColor('#FFFFFF'),
+            'input': QColor("#FFFFFFFF"),
             'prompt': QColor("#068B9A")
         }
         
@@ -106,20 +109,14 @@ class ArchTerminal(QWidget):
         
         user = os.getenv('USERNAME') or os.getenv('USER') or 'user'
         host = platform.node()
-        cursor.insertText(f"{user}@{host}:~{self.current_directory}$")
-        self.add_line('\nwelcome to arch terminal', 'input')
+        cursor.insertText(f"{user}@{host}:~{self.current_directory}$ ")
+        
         
         self.terminal.setTextCursor(cursor)
         self.terminal.ensureCursorVisible()
         
     def execute_command(self):
-        
-        
         command = self.input_line.text().strip()
-        
-        logging.basicConfig(filename='terminal.log', level=logging.INFO)
-        logging.info(f"Command executed: {command}")
-        
         self.input_line.clear()
         
         if not command:
@@ -129,8 +126,11 @@ class ArchTerminal(QWidget):
         self.command_history.append(command)
         self.history_index = len(self.command_history)
         
+        TIME = QDateTime.currentDateTime().toString("HH:mm:ss")
+        self.add_line(f"{TIME} - {command}", 'input')
         
-        self.add_line(f"{command}", 'input')
+        page = None
+        page: int
         
         
         if command.lower() in ['exit', 'quit']:
@@ -140,59 +140,113 @@ class ArchTerminal(QWidget):
         elif command == 'clear':
             self.terminal.clear()
             self.show_prompt()
-        elif command == 'help':
-            self.show_help()
-        else:
-            self.process.start(command)            
-        if command == "startbot":
-            self.start_telegram_bot()
-        if command == "restart":                                              
-            self.display_system_info()
-            
-        if command == "help dsi":
-            self.add_line('display system information (DSI) - main function of the script', 'normal')
-            
-        logging.info(command)
         
-            
-    def start_telegram_bot(self):
-        
-        if self.telegram_bot:
-            self.add_line("Бот уже запущен!", 'highlight')
-            return
 
-        self.add_line("Запускаю Telegram'бота...", 'normal')
-        
-        def bot_thread():
-            updater = Updater(self.bot_token)
-            dispatcher = updater.dispatcher
+        elif command.startswith('help'):
+            parts = command.split()
             
-           
-            def info_handler(update: Update, context: CallbackContext):
-                if str(update.effective_chat.id) != str(self.chat_id):
-                    update.message.reply_text("Доступ запрещён!")
-                    return
-                
-                system_info = self.get_system_info()  
-                update.message.reply_text(system_info)
-
-            dispatcher.add_handler(CommandHandler("info", info_handler))
+            if len(parts) == 1:
+                self.show_help_1()  
+                return
             
-            
-            def start_handler(update: Update, context: CallbackContext):
-                if not self.chat_id:
-                    self.chat_id = update.effective_chat.id
-                    update.message.reply_text("Бот активирован! Напишите /info для данных.")
+            try:
+                page = int(parts[1])
+                if page == 1:
+                    self.show_help_1()
+                elif page == 2:
+                    self.show_help_2()
+                elif page == 3:
+                    self.show_help_3()
                 else:
-                    update.message.reply_text("Ошибка")
+                    self.add_line("Доступны страницы 1-3. Показана страница 1", "highlight")
+                    self.show_help_1()
+            except ValueError:
+                self.add_line("Используйте: help <1-3> (page) ", "highlight")
+                self.show_prompt()
 
-            dispatcher.add_handler(CommandHandler("start", start_handler))
+
+                
+        elif command == "startbot":
+            self.start_telegram_bot()
+        elif command == 'stopbot':        
+            self.stop_bot()
             
-            updater.start_polling()
-            self.telegram_bot = updater
-            self.add_line("Бот запущен!", 'normal')
+            
+        elif command == "restart":                                              
+            self.display_system_info()
+        elif command == "help dsi":
+            self.add_line('display system information (DSI) - main function of the script', 'normal')
+            self.show_prompt()
+        else:
+            
+            self.process = QProcess(self)  
+            self.process.readyReadStandardOutput.connect(self.handle_stdout)
+            self.process.readyReadStandardError.connect(self.handle_stderr)
+            self.process.finished.connect(self.command_finished)
+            self.process.start(command)
+        
+        logging.info(f' {TIME} - {command}')
+            
+    
+    
+    def start_telegram_bot(self):
+            
+            
+            # if self.telegram_bot:
+            #     self.add_line("Бот уже запущен!", 'highlight')
+            #     return
+            
+            if not self.bot_token:
+                self.add_line("Ошибка: Токен бота не найден в .env файле!", 'highlight')
+                return
+                
+            if not self.allowed_chat_id:
+                self.add_line("Ошибка: ALLOWED_CHAT_ID не задан в .env файле!", 'highlight')
+                return
 
-        threading.Thread(target=bot_thread, daemon=True).start()
+            self.add_line("Запускаю Telegram бота...", 'normal')
+
+            def bot_thread():
+                try:
+                    updater = Updater(self.bot_token)
+                    dispatcher = updater.dispatcher
+                    
+                    
+                    def info_handler(update: Update, context: CallbackContext):
+                        if str(update.effective_chat.id) != self.allowed_chat_id:
+                            update.message.reply_text("⚠️ Доступ запрещён!")
+                            return
+                        
+                        try:
+                            system_info = self.get_system_info()
+                            update.message.reply_text(system_info)
+                        except Exception as e:
+                            update.message.reply_text(f"Ошибка: {str(e)}")
+
+                    
+                    def start_handler(update: Update, context: CallbackContext):
+                        if str(update.effective_chat.id) == self.allowed_chat_id:
+                            update.message.reply_text(
+                                "✅ Бот готов к работе!\n"
+                                "Используйте /info для получения данных системы"
+                            )
+                        else:
+                            update.message.reply_text("🚫 У вас нет доступа к этому боту")
+
+                    
+                    dispatcher.add_handler(CommandHandler("info", info_handler))
+                    dispatcher.add_handler(CommandHandler("start", start_handler))
+                    
+                    
+                    updater.start_polling()
+                    self.telegram_bot = updater
+                    self.add_line(f"Бот запущен для чата ID: {self.allowed_chat_id}", 'normal')
+                    
+                except Exception as e:
+                    self.add_line(f"Ошибка запуска бота: {str(e)}", 'highlight')
+
+            
+            threading.Thread(target=bot_thread, daemon=True).start()
     
     def get_system_info(self):
         
@@ -211,6 +265,30 @@ class ArchTerminal(QWidget):
             f"🔋 Батарея: {get_battery_info()}"  
         ]
         return "\n".join(info)
+    
+    def stop_bot(self):
+        if not self.telegram_bot:
+            self.add_line("Бот не запущен!", 'highlight')
+        else:
+            self.add_line("Останавливаю бота...", 'normal')
+            try:
+                
+                temp_updater = Updater(self.bot_token)
+                
+                
+                temp_updater.bot.send_message(
+                    chat_id=self.allowed_chat_id,
+                    text="🛑 Бот отключается по команде из терминала"
+                )
+                
+                
+                self.telegram_bot.stop()
+                self.telegram_bot = None
+                
+                self.add_line("Бот успешно остановлен", 'normal')
+                
+            except Exception as e:
+                self.add_line(f"Ошибка при остановке бота: {str(e)}", 'highlight')
             
     def change_directory(self, path):
         try:
@@ -228,13 +306,28 @@ class ArchTerminal(QWidget):
             
         self.show_prompt()
         
-    def show_help(self):
+    def show_help_1(self):
         
-        help_text = HELP_TEXT
+        help_text = HELP_TEXT_1
         
         self.add_line(help_text, 'normal')
         self.show_prompt()
         
+    def show_help_2(self):
+        
+        help_text = HELP_TEXT_2
+        
+        self.add_line(help_text, 'normal')
+        self.show_prompt()    
+
+    def show_help_3(self):
+        
+        help_text = HELP_TEXT_3
+        
+        self.add_line(help_text, 'normal')
+        self.show_prompt()
+    
+    
     def handle_stdout(self):
         data = self.process.readAllStandardOutput()
         output = self.safe_decode_windows(data) if platform.system() == "Windows" else self.safe_decode(data)
@@ -274,7 +367,10 @@ class ArchTerminal(QWidget):
         return bytes(byte_data).decode('utf-8', errors='replace')
         
     def command_finished(self):
-        self.process.deleteLater()
+    
+        self.process.readyReadStandardOutput.disconnect()
+        self.process.readyReadStandardError.disconnect()
+        self.process.finished.disconnect()
         self.show_prompt()
         
     def add_line(self, text, color=None, auto_scroll=True):
@@ -323,6 +419,9 @@ class ArchTerminal(QWidget):
             scrollbar.setValue(old_scroll_pos)
     
     def display_system_info(self):
+        
+        
+        
         self.terminal.clear()
         
         os_info = f"                                      |OS: {platform.system()} {platform.release()}"
@@ -359,20 +458,25 @@ class ArchTerminal(QWidget):
        
        
         self.update_line("Time: ", QDateTime.currentDateTime().toString("HH:mm:ss"), 'time')
-        
-        self.add_line(f"                *                     |Uptime: {uptime_str}", auto_scroll=False)
-        self.add_line(f"               ***                    |Host: {platform.node()}, {battery_info}", auto_scroll=False)    
-        self.add_line(f"              *****                   |Resolution: {cpuresinfo}", auto_scroll=False)
-        self.add_line(f"             *******                  |Shell: {shell}", auto_scroll=False)
         self.update_line("System: ", cheksys or "N/A", 'highlight')
-        self.add_line(f"           ***********                |Temp: {temperature}° (outdoor)", auto_scroll=False)
-        # self.add_line(f"          *************               |Memory: {mem_used:.1f}GB / {mem_total:.1f}GB", auto_scroll=False)
+        self.add_line(f"           /\     ┌──┐      ┌─┐       |Uptime: {uptime_str}", auto_scroll=False)
+        self.add_line(f"          /  \    |  |      | |       |Host: {platform.node()}, {battery_info}", auto_scroll=False)    
+        self.add_line(f"         / /\ \   |  |      | |       |Resolution: {cpuresinfo}", auto_scroll=False)
+        self.add_line(f"        / /  \ \  |  |      | |       |Shell: {shell}", auto_scroll=False)
+        self.add_line(f"       /  \__/  \ |  |      | |       |Temp: {temperature}° (outdoor)", auto_scroll=False)
+        self.add_line(f"      /  /\  /\  \|  |______| |       |CPU: {cpu_info}, {cpu_temp}", auto_scroll=False)
+        self.add_line(f"     /__/  \/  \__\___________|       |GPU: {gpu_info}", auto_scroll=False)
         self.update_line(f"MEM: ", monitor_memory() or "N/A", 'highlight')
-        self.add_line(f"         ***************              |CPU: {cpu_info}, {cpu_temp}", auto_scroll=False)
-        self.add_line(f"        *****************             |GPU: {gpu_info}", auto_scroll=False)
         self.add_line(f"                                      |Proxy: {proxy_tf}", 'network', auto_scroll=False)
         self.add_line(f"                                      |IP Address: {ip_address}", 'network', auto_scroll=False)
         self.update_line("Network name: ", self.get_network_name() or "N/A", 'highlight')
+        
+        
+        
+        
+        
+        # self.add_line(f"          *************               |Memory: {mem_used:.1f}GB / {mem_total:.1f}GB", auto_scroll=False)
+        
         
     
     def get_ip_address(self):
@@ -403,11 +507,11 @@ class ArchTerminal(QWidget):
     
     def update_ip_name(self):
         self.update_line("Network name: ", self.get_network_name() or "N/A", 'time')
-        QTimer.singleShot(64000, self.update_ip_name)
+        QTimer.singleShot(60000, self.update_ip_name)
         
     def update_system_info(self):
         self.update_line("System: ", check_inf_windows() or "N/A")
-        QTimer.singleShot(64000, self.update_system_info)
+        QTimer.singleShot(60000, self.update_system_info)
         
     def update_memory_inf(self):
         self.update_line("MEM: ", monitor_memory() or "N/A")
