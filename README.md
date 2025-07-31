@@ -1,21 +1,47 @@
-# arch-LInux-terminal-by-ultimate-for-windows, prealphver01
+# arch-LInux-terminal-by-ultimate-for-windows, prealphver05
 ![Terminal Screenshot](scrns.png) 
-zakos/replica for the arch Linux distribution
 
-!start file - **arch Linux main.py**
-!Before running, open the weather.py file and add your (or another) city + create file .env and write 'Token=/your token bot in telegram/'
-!for run tg-bot use command 'startbot' in commmandline
+ru 
 
+Терминал в стиле Arch Linux для Windows с мониторингом системы и Telegram-ботом
+
+## 📌 Особенности
+- Реалистичный интерфейс в стиле Arch
+- Мониторинг системы (CPU, RAM, сеть, батарея)
+- Встроенный Telegram-бот для удаленного доступа
+- Поддержка обычных команд (cd, clear и др.)
+
+## 🚀 Быстрый старт
+
+1. Установите зависимости:
+pip install PyQt5 psutil python-telegram-bot python-dotenv requests wmi
+
+2. Настройка:
+Создайте .env файл:
+BOT_TOKEN=ваш_токен_бота
+ALLOWED_CHAT_ID=ваш_chat_id
+
+Для погоды отредактируйте:
+modules_plus/weather.py -> CITY = "Ваш город"
+
+3.Запуск:
+
+python "arch Linux main.py"
   
-*libraries used:* PyQT5, platform, psutil, datetime, time, subprocess, requests, winreg, wmi, os, socket,  sys
+## 📊 Мониторинг системы
 
-At the moment, the CPU temperature is detected using [OpenHardwareMonitor](https://openhardwaremonitor.org/) (vmi). Install it from the app's official website for full terminal functionality.
+Требования: OpenHardwareMonitor для температуры CPU
 
-Data is updated (system, Internet) once a minute in the name of optimization, when, in turn, time and RAM are once every 1 second and 5 seconds, respectively.
+Частота обновления:
+Время: 1 сек
+RAM: 5 сек
+Система/Сеть: 60 сек
 
-The logic of attachment is built 24.07.2025
-Integrated command line function 26.07.2025
-Integrated tg-bot 27.07.2025
-Integrated logger 28.07.2025
+## Используемые библеотеки:
+PyQt5, platform, psutil, datetime, time, 
+subprocess, requests, winreg, wmi, os, 
+socket, sys, python-telegram-bot, python-dotenv
 
-**python used 3.12.4+**
+**Python 3.12.4+ | Windows 10/11**
+**Для полного функционала требуются права администратора**
+
