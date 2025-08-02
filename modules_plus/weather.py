@@ -18,6 +18,8 @@ def temp1():
             temperature = '+' + temperature 
         
             return temperature
+        else:
+            return temperature
     except:
         return 'N/A'
 
