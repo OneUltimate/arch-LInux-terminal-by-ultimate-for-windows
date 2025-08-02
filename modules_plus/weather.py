@@ -1,7 +1,7 @@
 import requests
 from dotenv import env 
 
-CITY = load.dotenv("CITY")
+CITY = os.getenv("CITY")
 
 city1 = CITY or ['Москва', 'Рязань', 'Уфа', 'Париж']
 
