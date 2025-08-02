@@ -1,5 +1,5 @@
 import requests
-from dotenv import env 
+from dotenv import load_dotenv 
 
 CITY = os.getenv("CITY")
 
