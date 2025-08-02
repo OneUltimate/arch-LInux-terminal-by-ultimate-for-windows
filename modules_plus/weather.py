@@ -1,7 +1,9 @@
 import requests
+from dotenv import env 
 
+CITY = load.dotenv("CITY")
 
-city1 = ['Москва', 'Рязань', 'Уфа', 'Париж']
+city1 = CITY or ['Москва', 'Рязань', 'Уфа', 'Париж']
 
 for city1 in city1:
     url1 = 'https://api.openweathermap.org/data/2.5/weather?q='+city1+'&units=metric&lang=ru&appid=79d1ca96933b0328e1c7e3e7a26cb347'
