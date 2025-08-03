@@ -19,3 +19,4 @@ Available commands:
 
 HELP_TEXT_3 = """_3_"""
 HELP_TEXT_4 = """_4_"""
+HELP_TEXT_4 = """_4_"""
