@@ -35,7 +35,7 @@ python "arch Linux main.py"
 - RAM: 5 сек
 - Система/Сеть: 60 сек
 
-## 📚 Используемые библеотеки/требования:
+## 📚 Используемые библиотеки/требования:
 PyQt5, platform, psutil, datetime, time, 
 subprocess, requests, winreg, wmi, os, 
 socket, sys, python-telegram-bot, python-dotenv
