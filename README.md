@@ -1,5 +1,5 @@
 
-# arch-LInux-terminal-by-ultimate-for-windows, prealphver05
+# arch-LInux-terminal-by-ultimate-for-windows, prealphver06
 ![Terminal Screenshot](scrns.png) 
 
 ## *ru* 
