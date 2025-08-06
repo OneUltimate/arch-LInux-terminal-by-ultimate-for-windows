@@ -468,15 +468,9 @@ class ArchTerminal(QWidget):
         self.add_line(f"                                      |Proxy: {proxy_tf}", 'network', auto_scroll=False)
         self.add_line(f"                                      |IP Address: {ip_address}", 'network', auto_scroll=False)
         self.update_line("Network name: ", self.get_network_name() or "N/A", 'highlight')
-        
-        
-        
-        
-        
+     
         # self.add_line(f"          *************               |Memory: {mem_used:.1f}GB / {mem_total:.1f}GB", auto_scroll=False)
-        
-        
-    
+ 
     def get_ip_address(self):
         try:
             if platform.system() == "Windows":
