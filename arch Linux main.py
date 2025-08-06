@@ -191,9 +191,6 @@ class ArchTerminal(QWidget):
     
     def start_telegram_bot(self):
             
-            
-            
-            
             if not self.bot_token:
                 self.add_line("Ошибка: Токен бота не найден в .env файле!", 'highlight')
                 return
