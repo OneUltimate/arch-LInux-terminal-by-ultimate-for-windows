@@ -36,7 +36,8 @@ class ArchTerminal(QWidget):
         self.setGeometry(100, 100, 1000, 415)
         
         self.allowed_chat_id = os.getenv('ALLOWED_CHAT_ID')
-        
+        self.init_ui()
+ 
         self.colors = {
             'text': QColor('#00FF00'),
             'title': QColor("#068B9A"),
@@ -56,7 +57,7 @@ class ArchTerminal(QWidget):
         self.history_index = 0
         self.current_directory = os.getcwd()
         
-        self.init_ui()
+        
         self.display_system_info()
         self.setup_timers()
         self.show_prompt()
