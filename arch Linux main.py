@@ -164,14 +164,14 @@ class ArchTerminal(QWidget):
         TIME = QDateTime.currentDateTime().toString("HH:mm:ss")
         self.add_line(f"{TIME} - {command}", 'input')
         
-      
+       
         handled = False
         for plugin in self.plugins:
             if plugin.handle_command(command):
                 handled = True
                 break
         
-       
+        
         if not handled:
             if command.lower() in ['exit', 'quit']:
                 QApplication.quit()
@@ -213,18 +213,47 @@ class ArchTerminal(QWidget):
             elif command == "rp":
                 self.plugins = []
                 self.load_plugins()
-                self.add_line("Плагины перезагружены", 'normal')    
-            
+                self.add_line("Плагины перезагружены", 'normal') 
+                
+                
+            if command == 'plugin help':
+                def show_plugin_help():
+                    
+                    plugin_helps = []
+                    for plugin in self.plugins:
+                        if hasattr(plugin, 'get_help'):
+                            help_text = plugin.get_help()
+                            if help_text:
+                                plugin_helps.append(help_text)
+                    
+                    
+                    if plugin_helps:
+                        self.add_line("=== Доступные плагины ===", 'highlight')
+                        for i, help_text in enumerate(plugin_helps, 1):
+                            self.add_line(f"\n🔹 Плагин {i}:", 'normal')
+                            self.add_line(help_text, 'normal')
+                    else:
+                        self.add_line("Нет доступных плагинов", 'highlight')
+                
+                show_plugin_help()
+                    
             else:
                 self.process = QProcess(self)  
                 self.process.readyReadStandardOutput.connect(self.handle_stdout)
                 self.process.readyReadStandardError.connect(self.handle_stderr)
                 self.process.finished.connect(self.command_finished)
                 self.process.start(command)
-        
-        logging.info(f' {TIME} - {command}')
-
+                
+                
+              
+                
+                
+           
             
+            
+                
+            logging.info(f' {TIME} - {command}')
+
     
     def load_plugins(self):
         
