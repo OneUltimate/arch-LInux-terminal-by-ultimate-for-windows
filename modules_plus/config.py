@@ -2,8 +2,22 @@ from PyQt5.QtGui import QTextCursor, QColor, QTextCharFormat, QFont
 from PyQt5.QtWidgets import (QApplication, QWidget, QTextEdit, QVBoxLayout, 
                             QScrollBar, QLabel, QMainWindow, QPushButton, 
                             QHBoxLayout)
+from PyQt5.QtCore import QTimer, QDateTime, Qt, QProcess
 import subprocess
 import platform
+
+ALL_COLORS = {
+            'text': QColor('#00FF00'),
+            'title': QColor("#068B9A"),
+            'highlight': QColor('#34E2E2'),
+            'normal': QColor("#54EBFF"),
+            'time': QColor('#34E2E2'),
+            'bg': QColor(30, 30, 30, 230), 
+            'network': QColor('#34E2E2'),
+            'input': QColor("#FFFFFFFF"),
+            'prompt': QColor("#068B9A")
+        }
+
 
 TITLE_BAR_STYLE = """
     border: 1px solid #34E2E2;
@@ -45,12 +59,17 @@ WINDOW_STYLE = """
         border: 1px solid #34E2E2;
         background: #000000;
     }
+    
 """
+
+
+
 THEMES = {
     'dark': {'bg': '#000000', 'text': '#00FF00'},
     'light': {'bg': '#FFFFFF', 'text': '#000000'},
     'matrix': {'bg': '#001F00', 'text': '#00FF41'}
 }
+
 class CustomTitleBar(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -76,4 +95,3 @@ class CustomTitleBar(QWidget):
         layout.addStretch()
         layout.addWidget(self.minimize_btn)
         layout.addWidget(self.close_btn)
-
