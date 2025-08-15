@@ -1,4 +1,3 @@
-
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QTextEdit, QVBoxLayout, 
                             QScrollBar, QLabel, QMainWindow, QPushButton, 
@@ -15,7 +14,13 @@ from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import threading
 import logging
-from dotenv import load_dotenv 
+from dotenv import load_dotenv
+import importlib
+import inspect
+from pathlib import Path
+import importlib.util
+
+
 
 from modules_plus.weather import *
 from modules_plus.pc_information import *
@@ -23,33 +28,32 @@ from modules_plus.cheking_system import *
 from modules_plus.proxy_checker import * 
 from modules_plus.config import * 
 from help_text import * 
+from plugins.terminal_plugin import *
+
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv('Token')
 logging.basicConfig(filename='terminal.log', level=logging.INFO)
 
+
+
 class ArchTerminal(QWidget):
     def __init__(self):
         super().__init__()
+        
+       
+        
+        self.setAttribute(Qt.WA_TranslucentBackground)
         self.setStyleSheet(WINDOW_STYLE)
         self.setWindowTitle("ultimatum@arch")
         self.setGeometry(100, 100, 1000, 415)
         
+       
+        
         self.allowed_chat_id = os.getenv('ALLOWED_CHAT_ID')
-        self.init_ui()
- 
-        self.colors = {
-            'text': QColor('#00FF00'),
-            'title': QColor("#068B9A"),
-            'highlight': QColor('#34E2E2'),
-            'normal': QColor("#54EBFF"),
-            'time': QColor('#34E2E2'),
-            'bg': QColor('#000000'),
-            'network': QColor('#34E2E2'),
-            'input': QColor("#FFFFFFFF"),
-            'prompt': QColor("#068B9A")
-        }
+        
+        self.colors = (ALL_COLORS)
         
         self.font = QFont("Consolas", 10)
         self.last_ip = ""
@@ -58,10 +62,14 @@ class ArchTerminal(QWidget):
         self.history_index = 0
         self.current_directory = os.getcwd()
         
+        self.init_ui()
         
         self.display_system_info()
         self.setup_timers()
         self.show_prompt()
+        
+        self.plugins = [] 
+        self.load_plugins() 
         
         self.telegram_bot = None  
         self.bot_token = BOT_TOKEN
@@ -69,37 +77,62 @@ class ArchTerminal(QWidget):
         
     def init_ui(self):
         layout = QVBoxLayout()
-        layout.setContentsMargins(1, 1, 1, 1)
+        layout.setContentsMargins(0, 0, 0, 0)  
         self.setLayout(layout)
        
+
+        terminal_container = QWidget()
+        terminal_container.setStyleSheet(f"""
+            background-color: rgba{self.colors['bg'].getRgb()};
+            border-radius: 5px;
+            border: 1px solid {self.colors['highlight'].name()};
+        """)
+        
+        terminal_layout = QVBoxLayout(terminal_container)
+        terminal_layout.setContentsMargins(5, 5, 5, 5)
+        
         self.terminal = QTextEdit()
-        self.terminal.setReadOnly(False)  
+        self.terminal.setReadOnly(False)
         self.terminal.setFont(self.font)
-        self.terminal.setStyleSheet(f"background-color: {self.colors['bg'].name()}; color: {self.colors['normal'].name()};")
-        self.terminal.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
-        
-        self.input_line = QLineEdit()
-        self.input_line.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: {self.colors['bg'].name()};
-                color: {self.colors['input'].name()};
-                border: 1px solid {self.colors['highlight'].name()};
+        self.terminal.setStyleSheet(f"""
+            QTextEdit {{
+                background: transparent;
+                color: {self.colors['normal'].name()};
+                border: none;
                 font-family: Consolas;
                 font-size: 10pt;
             }}
         """)
+        self.terminal.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        self.input_line = QLineEdit()
+        self.input_line.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: rgba(50, 50, 50, 0.7);
+                color: {self.colors['input'].name()};
+                border: 1px solid {self.colors['highlight'].name()};
+                font-family: Consolas;
+                font-size: 10pt;
+                border-radius: 3px;
+                padding: 5px;
+            }}
+        """)
         self.input_line.returnPressed.connect(self.execute_command)
         
-        layout.addWidget(self.terminal)
-        layout.addWidget(self.input_line)
+        terminal_layout.addWidget(self.terminal)
+        terminal_layout.addWidget(self.input_line)
+        layout.addWidget(terminal_container)
         
-      
         self.process = QProcess(self)
         self.process.readyReadStandardOutput.connect(self.handle_stdout)
         self.process.readyReadStandardError.connect(self.handle_stderr)
         self.process.finished.connect(self.command_finished)
+
+    
+    
+    
         
+    
     def show_prompt(self):
        
         cursor = self.terminal.textCursor()
@@ -131,67 +164,147 @@ class ArchTerminal(QWidget):
         TIME = QDateTime.currentDateTime().toString("HH:mm:ss")
         self.add_line(f"{TIME} - {command}", 'input')
         
-        page = None
-        page: int
+      
+        handled = False
+        for plugin in self.plugins:
+            if plugin.handle_command(command):
+                handled = True
+                break
         
-        
-        if command.lower() in ['exit', 'quit']:
-            QApplication.quit()
-        elif command.startswith('cd '):
-            self.change_directory(command[3:].strip())
-        elif command == 'clear':
-            self.terminal.clear()
-            self.show_prompt()
-        
-
-        elif command.startswith('help'):
-            parts = command.split()
-            
-            if len(parts) == 1:
-                self.show_help_1()  
-                return
-            
-            try:
-                page = int(parts[1])
-                if page == 1:
-                    self.show_help_1()
-                elif page == 2:
-                    self.show_help_2()
-                elif page == 3:
-                    self.show_help_3()
-                else:
-                    self.add_line("Доступны страницы 1-3. Показана страница 1", "highlight")
-                    self.show_help_1()
-            except ValueError:
-                self.add_line("Используйте: help <1-3> (page) ", "highlight")
+       
+        if not handled:
+            if command.lower() in ['exit', 'quit']:
+                QApplication.quit()
+            elif command.startswith('cd '):
+                self.change_directory(command[3:].strip())
+            elif command == 'clear':
+                self.terminal.clear()
                 self.show_prompt()
-
-
-                
-        elif command == "startbot":
-            self.start_telegram_bot()
-        elif command == 'stopbot':        
-            self.stop_bot()
+            elif command.startswith('help'):
+                parts = command.split()
+                if len(parts) == 1:
+                    self.show_help_1()
+                else:
+                    try:
+                        page = int(parts[1])
+                        if page == 1:
+                            self.show_help_1()
+                        elif page == 2:
+                            self.show_help_2()
+                        elif page == 3:
+                            self.show_help_3()
+                        else:
+                            self.add_line("Доступны страницы 1-3. Показана страница 1", "highlight")
+                            self.show_help_1()
+                    except ValueError:
+                        self.add_line("Используйте: help <1-3> (page) ", "highlight")
+                        self.show_prompt()
+                        
+            elif command == "startbot":
+                self.start_telegram_bot()
+            elif command == 'stopbot':        
+                self.stop_bot()
+            elif command == "restart":                                              
+                self.display_system_info()
+            elif command == "help dsi":
+                self.add_line('display system information (DSI) - main function of the script', 'normal')
+                self.show_prompt()
             
+            elif command == "rp":
+                self.plugins = []
+                self.load_plugins()
+                self.add_line("Плагины перезагружены", 'normal')    
             
-        elif command == "restart":                                              
-            self.display_system_info()
-        elif command == "help dsi":
-            self.add_line('display system information (DSI) - main function of the script', 'normal')
-            self.show_prompt()
-        else:
-            
-            self.process = QProcess(self)  
-            self.process.readyReadStandardOutput.connect(self.handle_stdout)
-            self.process.readyReadStandardError.connect(self.handle_stderr)
-            self.process.finished.connect(self.command_finished)
-            self.process.start(command)
+            else:
+                self.process = QProcess(self)  
+                self.process.readyReadStandardOutput.connect(self.handle_stdout)
+                self.process.readyReadStandardError.connect(self.handle_stderr)
+                self.process.finished.connect(self.command_finished)
+                self.process.start(command)
         
         logging.info(f' {TIME} - {command}')
+
             
     
+    def load_plugins(self):
+        
+        plugins_dir = Path(__file__).parent / "plugins"
+        
+        
+        plugins_dir.mkdir(exist_ok=True)
+        
+  
+        self.add_line(f"🔍 Поиск плагинов в: {plugins_dir}", 'normal')
+        print(f"[DEBUG] Plugins dir: {plugins_dir}")
+        
+        loaded_count = 0
+        error_count = 0
+        
+        for plugin_file in plugins_dir.glob("*.py"):
+            if plugin_file.stem in ["__init__", "terminal_plugin"]:
+                continue
+                
+            plugin_name = plugin_file.stem
+            module_name = f"plugins.{plugin_name}"
+            
+            try:
+                
+                spec = importlib.util.spec_from_file_location(module_name, plugin_file)
+                if spec is None:
+                    raise ImportError(f"Не удалось создать spec для {plugin_name}")
+                    
+                module = importlib.util.module_from_spec(spec)
+                
+                
+                sys.modules[module_name] = module  
+                spec.loader.exec_module(module)
+                
+                
+                for name, obj in inspect.getmembers(module):
+                    if (inspect.isclass(obj) and 
+                        issubclass(obj, Plugin) and 
+                        obj != Plugin):
+                        
+                        try:
+                            plugin = obj(self)
+                            plugin.setup()
+                            self.plugins.append(plugin)
+                            loaded_count += 1
+                            msg = f"✅ Успешно загружен: {plugin_name}"
+                            self.add_line(msg, 'normal')
+                            print(f"[SUCCESS] {msg}")
+                        except Exception as e:
+                            error_count += 1
+                            msg = f"⚠️ Ошибка инициализации {plugin_name}: {str(e)}"
+                            self.add_line(msg, 'highlight')
+                            print(f"[ERROR] {msg}")
+                            import traceback
+                            traceback.print_exc()
+                            
+            except Exception as e:
+                error_count += 1
+                msg = f"❌ Ошибка загрузки {plugin_name}: {str(e)}"
+                self.add_line(msg, 'highlight')
+                print(f"[CRITICAL] {msg}")
+                import traceback
+                traceback.print_exc()
+   
+   
+        summary = f"📊 Загружено плагинов: {loaded_count}"
+        if error_count > 0:
+            summary += f", ошибок: {error_count}"
+        self.add_line(summary, 'normal')
+        
+        
+        if loaded_count == 0:
+            self.add_line('', 'normal')
     
     def start_telegram_bot(self):
+            
+            
+            # if self.telegram_bot:
+            #     self.add_line("Бот уже запущен!", 'highlight')
+            #     return
             
             if not self.bot_token:
                 self.add_line("Ошибка: Токен бота не найден в .env файле!", 'highlight')
@@ -229,10 +342,31 @@ class ArchTerminal(QWidget):
                             )
                         else:
                             update.message.reply_text("🚫 У вас нет доступа к этому боту")
+                            
+                    # def restart_terminal(update: Update, context: CallbackContext):
+                    #     if str(update.effective_chat.id) == self.allowed_chat_id:
+                    #         update.message.reply_text("перезапуск...")
+                            
+
+                    #         update.message.reply_text("ок.")
+                    #     else:
+                    #         update.message.reply_text("🚫 У вас нет доступа к этому боту")
+                    def restart_dsi(update: Update, context: CallbackContext):
+                        if str(update.effective_chat.id) == self.allowed_chat_id:
+                            update.message.reply_text("перезапуск dsi")
+                            self.display_system_info()
+                                
+                        else:
+                            update.message.reply_text("🚫 У вас нет доступа к этому боту")
+                            
 
                     
                     dispatcher.add_handler(CommandHandler("info", info_handler))
                     dispatcher.add_handler(CommandHandler("start", start_handler))
+                    # dispatcher.add_handler(CommandHandler("restartterminal", restart_terminal))
+                    dispatcher.add_handler(CommandHandler("restart", restart_dsi))
+                    
+                    
                     
                     
                     updater.start_polling()
@@ -465,11 +599,17 @@ class ArchTerminal(QWidget):
         self.add_line(f"     /__/  \/  \__\___________|       |GPU: {gpu_info}", auto_scroll=False)
         self.update_line(f"MEM: ", monitor_memory() or "N/A", 'highlight')
         self.add_line(f"                                      |Proxy: {proxy_tf}", 'network', auto_scroll=False)
-        self.add_line(f"                                      |IP Address: {ip_address}", 'network', auto_scroll=False)
+        self.add_line(f"prealph6                              |IP Address: {ip_address}", 'network', auto_scroll=False)
         self.update_line("Network name: ", self.get_network_name() or "N/A", 'highlight')
-     
+        
+        
+        
+        
+        
         # self.add_line(f"          *************               |Memory: {mem_used:.1f}GB / {mem_total:.1f}GB", auto_scroll=False)
- 
+        
+        
+    
     def get_ip_address(self):
         try:
             if platform.system() == "Windows":
@@ -502,11 +642,17 @@ class ArchTerminal(QWidget):
         
     def update_system_info(self):
         self.update_line("System: ", check_inf_windows() or "N/A")
-        QTimer.singleShot(60000, self.update_system_info)
+        QTimer.singleShot(150000, self.update_system_info)
         
     def update_memory_inf(self):
         self.update_line("MEM: ", monitor_memory() or "N/A")
         QTimer.singleShot(5000, self.update_memory_inf)
+
+
+
+
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -514,12 +660,13 @@ if __name__ == "__main__":
     
     main_window = QMainWindow()
     main_window.setWindowFlags(Qt.FramelessWindowHint)
+    main_window.setAttribute(Qt.WA_TranslucentBackground)
     main_window.resize(1000, 415)
-    main_window.setStyleSheet("QMainWindow { background: #000000; }")
+    main_window.setStyleSheet("QMainWindow { background: transparent; }")
     
     title_bar = CustomTitleBar(main_window)
     container = QWidget()
-    container.setStyleSheet(WINDOW_STYLE)
+    container.setStyleSheet("background: transparent;")
     
     layout = QVBoxLayout(container)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -531,6 +678,7 @@ if __name__ == "__main__":
     
     main_window.setCentralWidget(container)
     
+   
     def move_window(event):
         if event.buttons() == Qt.LeftButton:
             main_window.move(event.globalPos() - title_bar.drag_pos)
