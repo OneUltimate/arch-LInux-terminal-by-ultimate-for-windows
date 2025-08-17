@@ -62,58 +62,58 @@ prealpha-v0.6 (15.08.2025): Интеграция системы плагинов
 
 
 ## *en*
-Arch Linux-style terminal for Windows with system monitoring and Telegram bot
+Arch Linux-style terminal for Windows with indicator monitoring and integrated Telegram bot
 
-## 🔥 Main features
+## 🔥 Main functions
 - Authentic Arch Linux interface
-- Comprehensive monitoring (CPU/RAM/network/battery)
-- Built-in Telegram bot for remote access (future remote control via Telegram bot)
-- Full-fledged command line (Support for common commands cd, clear etc.)
+- Comprehensive monitoring (CPU/RAM/Network/battery)
+- Built-in Telegram bot for remote access (in the future, remote control via Telegram bot)
+- Full-fledged command line(Support for regular cd, clear, etc. commands)
+- Flexible command/plug-in system
 
-Flexible command system
+# Fast start
 
-## 🚀 Quick start
-
-1. Install dependencies:
+1. Install the dependencies:
 pip install PyQt5 psutil python-telegram-bot python-dotenv requests wmi
 
 2. Setup:
-Create .env file:
-BOT_TOKEN=your_bot_token
-ALLOWED_CHAT_ID=your_chat_id
-For weather edit: modules_plus/weather.py -> CITY = "Your city"
+- Create it .env file:
+- BOT_TOKEN=your_token_bot
+- ALLOWED_CHAT_ID=your_id_in the telegram
+- CITY=the name of your or another city 
 
 3. Launch:
-python "arch Linux main.py"
-  
+python "arch Linux main.py "
+
 ## 📊 System monitoring
 
 Requirements: OpenHardwareMonitor for CPU temperature
 
-Update frequency:
-Time: 1 sec
-RAM: 5 sec
-System/Network: 60 sec
+Refresh rate:
+- Time: 1 sec.
+- RAM: 5 seconds
+- The system/Network: 60 seconds
+/ can be changed at any time/
 
-## 📚 Used libraries/requirements:
-PyQt5, platform, psutil, datetime, time, 
-subprocess, requests, winreg, wmi, os, 
+# Libraries/requirements used:
+PyQt5, platform, psutil, datetime, time,
+subprocess, requests, winreg, wmi, os,
 socket, sys, python-telegram-bot, python-dotenv
 
 *Python 3.12.4+ | Windows 10/11*
-**Administrator rights required for full functionality**
+**Administrator rights are required for full functionality**
 
 ## 📅 Version history:
-prealpha-v0.1 (24.07.2025): Core logic
+prealpha-v0.1 (07/24/2025): Basic logic
 
-prealpha-v0.2 (26.07.2025): Command line
+prealpha-v0.2 (07/26/2025): Command line
 
-prealpha-v0.3 (27.07.2025): Telegram bot
+prealpha-v0.3 (07/27/2025): Telegram bot
 
 prealpha-v0.4 (28.07.2025): Logging
 
-prealpha-v0.5 (31.07.2025): Revised tg connection logic + commandline logic changes
+prealpha-v0.5 (07/31/2025): Redesigned TG connection logic + commandline logic changes
 
-**📌 Project is under active development.**
+prealpha-v0.6 (08/15/2025): Plugin system integration, design update 
 
-
+**📌 The project is under active development.**
