@@ -9,7 +9,7 @@ class WeatherPlugin(Plugin):
         self.api_key = None  
         
     def setup(self):
-        """Инициализация плагина"""
+        
         self.api_key = '9d1ca96933b0328e1c7e3e7a26cb347'
         if not self.api_key:
             self.terminal.add_line("⚠️ Внимание: API ключ для погоды не задан", 'highlight')
@@ -54,4 +54,5 @@ class WeatherPlugin(Plugin):
         except Exception as e:
             self.terminal.add_line(f"❌ Неожиданная ошибка: {str(e)}", 'highlight')
         finally:
+
             self.terminal.show_prompt()
