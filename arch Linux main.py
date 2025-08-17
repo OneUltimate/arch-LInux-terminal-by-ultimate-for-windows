@@ -1,9 +1,13 @@
+
+
+
+
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QTextEdit, QVBoxLayout, 
                             QScrollBar, QLabel, QMainWindow, QPushButton, 
                             QHBoxLayout, QLineEdit)
-from PyQt5.QtCore import QTimer, QDateTime, Qt, QProcess
-from PyQt5.QtGui import QTextCursor, QColor, QTextCharFormat, QFont
+from PyQt5.QtCore import QTimer, QDateTime, Qt, QProcess, QPropertyAnimation
+from PyQt5.QtGui import QTextCursor, QColor, QTextCharFormat, QFont, QFontDatabase
 import platform
 import psutil
 import datetime
@@ -20,7 +24,7 @@ import inspect
 from pathlib import Path
 import importlib.util
 
-
+import getpass
 
 from modules_plus.weather import *
 from modules_plus.pc_information import *
@@ -30,12 +34,87 @@ from modules_plus.config import *
 from help_text import * 
 from plugins.terminal_plugin import *
 
+PC = []
 
 load_dotenv()
 
-BOT_TOKEN = os.getenv('Token')
+
 logging.basicConfig(filename='terminal.log', level=logging.INFO)
 
+
+class SplashScreen(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        # self.setGeometry(0, 0, 1000, 415)
+        self.setFixedSize(1000, 415)
+        
+        self.colors = {
+            'bg': QColor(30, 30, 30, 230),  
+            'text': QColor("#54EBFF"),
+            'highlight': QColor('#34E2E2'),  
+        }
+        
+        
+        self.setStyleSheet(f"""
+            background-color: rgba{self.colors['bg'].getRgb()};
+            border-radius: 8px;
+            border: 1px solid {self.colors['highlight'].name()};
+        """)
+        
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        
+        font_id = QFontDatabase.addApplicationFont("VT323-Regular.ttf")  
+        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
+        
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setStyleSheet(f"""
+            QLabel {{
+                color: {self.colors['text'].name()};
+                font-family: {font_family};
+                font-size: 60px;
+                
+            }}
+        """)
+        self.layout.addWidget(self.label)
+        
+       
+        self.username = os.getenv('USERNAME') or os.getenv('USER') or 'user'
+        self.text_to_type = f"welcome mr.{self.username} "
+        self.current_text = ""
+        self.char_index = 0
+        
+        
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.type_next_char)
+        self.timer.start(250) 
+        
+    def type_next_char(self):
+        if self.char_index < len(self.text_to_type):
+            self.current_text += self.text_to_type[self.char_index]
+            self.label.setText(self.current_text)
+            self.char_index += 1
+        else:
+            self.timer.stop()
+            
+            QTimer.singleShot(1200, self.close_splash)
+            
+    def close_splash(self):
+        
+        self.animation = QPropertyAnimation(self, b"windowOpacity")
+        self.animation.setDuration(500)
+        self.animation.setStartValue(1)
+        self.animation.setEndValue(0)
+        self.animation.finished.connect(self.close)
+        self.animation.start()
+        
+        
+        if self.parent:
+            self.parent.show()
 
 
 class ArchTerminal(QWidget):
@@ -43,15 +122,12 @@ class ArchTerminal(QWidget):
         super().__init__()
         
        
-        
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setStyleSheet(WINDOW_STYLE)
         self.setWindowTitle("ultimatum@arch")
         self.setGeometry(100, 100, 1000, 415)
         
-       
-        
-        self.allowed_chat_id = os.getenv('ALLOWED_CHAT_ID')
+        self.allowed_chat_id = ID_CHAT
         
         self.colors = (ALL_COLORS)
         
@@ -180,7 +256,7 @@ class ArchTerminal(QWidget):
             elif command == 'clear':
                 self.terminal.clear()
                 self.show_prompt()
-            elif command.startswith('help'):
+            elif command.startswith('!help'):
                 parts = command.split()
                 if len(parts) == 1:
                     self.show_help_1()
@@ -197,7 +273,7 @@ class ArchTerminal(QWidget):
                             self.add_line("Доступны страницы 1-3. Показана страница 1", "highlight")
                             self.show_help_1()
                     except ValueError:
-                        self.add_line("Используйте: help <1-3> (page) ", "highlight")
+                        self.add_line("Используйте: !help <1-3> (page) ", "highlight")
                         self.show_prompt()
                         
             elif command == "startbot":
@@ -206,7 +282,7 @@ class ArchTerminal(QWidget):
                 self.stop_bot()
             elif command == "restart":                                              
                 self.display_system_info()
-            elif command == "help dsi":
+            elif command == "!help dsi":
                 self.add_line('display system information (DSI) - main function of the script', 'normal')
                 self.show_prompt()
             
@@ -243,14 +319,7 @@ class ArchTerminal(QWidget):
                 self.process.readyReadStandardError.connect(self.handle_stderr)
                 self.process.finished.connect(self.command_finished)
                 self.process.start(command)
-                
-                
-              
-                
-                
-           
-            
-            
+      
                 
             logging.info(f' {TIME} - {command}')
 
@@ -300,12 +369,18 @@ class ArchTerminal(QWidget):
                             self.plugins.append(plugin)
                             loaded_count += 1
                             msg = f"✅ Успешно загружен: {plugin_name}"
-                            self.add_line(msg, 'normal')
+                            
+                           
+                            # self.add_line(msg, 'normal')
+                            
                             print(f"[SUCCESS] {msg}")
+                            
                         except Exception as e:
                             error_count += 1
                             msg = f"⚠️ Ошибка инициализации {plugin_name}: {str(e)}"
-                            self.add_line(msg, 'highlight')
+                            
+                            # self.add_line(msg, 'highlight')
+                            
                             print(f"[ERROR] {msg}")
                             import traceback
                             traceback.print_exc()
@@ -313,7 +388,9 @@ class ArchTerminal(QWidget):
             except Exception as e:
                 error_count += 1
                 msg = f"❌ Ошибка загрузки {plugin_name}: {str(e)}"
-                self.add_line(msg, 'highlight')
+                
+                # self.add_line(msg, 'highlight')
+                
                 print(f"[CRITICAL] {msg}")
                 import traceback
                 traceback.print_exc()
@@ -388,7 +465,8 @@ class ArchTerminal(QWidget):
                         else:
                             update.message.reply_text("🚫 У вас нет доступа к этому боту")
                             
-
+                    
+                    
                     
                     dispatcher.add_handler(CommandHandler("info", info_handler))
                     dispatcher.add_handler(CommandHandler("start", start_handler))
@@ -398,9 +476,12 @@ class ArchTerminal(QWidget):
                     
                     
                     
+                    
                     updater.start_polling()
                     self.telegram_bot = updater
                     self.add_line(f"Бот запущен для чата ID: {self.allowed_chat_id}", 'normal')
+                    
+                    
                     
                 except Exception as e:
                     self.add_line(f"Ошибка запуска бота: {str(e)}", 'highlight')
@@ -718,6 +799,9 @@ if __name__ == "__main__":
     
     title_bar.mouseMoveEvent = move_window
     title_bar.mousePressEvent = mouse_press_event
+    
+    splash = SplashScreen(main_window)
+    splash.show()
     
     main_window.show()
     sys.exit(app.exec_())
