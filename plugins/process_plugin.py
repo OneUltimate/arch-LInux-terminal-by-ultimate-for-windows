@@ -44,13 +44,13 @@ class ProcessPlugin(Plugin):
             
         target = parts[1]
         try:
-            if target.isdigit():  # Если ввели PID
+            if target.isdigit():  
                 pid = int(target)
                 if platform.system() == "Windows":
                     os.system(f"taskkill /pid {pid} /f")
                 else:
                     os.kill(pid, 9)
-            else:  # Если ввели имя процесса
+            else: 
                 if platform.system() == "Windows":
                     os.system(f"taskkill /im {target} /f")
                 else:
@@ -66,4 +66,5 @@ class ProcessPlugin(Plugin):
         return (
             "ps - показать список процессов\n"
             "kill <PID> - завершить процесс"
+
         )
