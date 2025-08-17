@@ -21,7 +21,7 @@ pip install PyQt5 psutil python-telegram-bot python-dotenv requests wmi
 - Создайте .env файл:
 - BOT_TOKEN=ваш_токен_бота
 - ALLOWED_CHAT_ID=ваш_id_в_телеграмме
-- Для погоды отредактируйте: modules_plus/weather.py -> CITY = "Ваш город" (в будущем переедет в .env)
+- CITY=название вашего или иного города 
 
 3. Запуск:
 python "arch Linux main.py"
