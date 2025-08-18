@@ -3,11 +3,20 @@
 
 
 import sys
-from PyQt5.QtWidgets import (QApplication, QWidget, QTextEdit, QVBoxLayout, 
-                            QScrollBar, QLabel, QMainWindow, QPushButton, 
-                            QHBoxLayout, QLineEdit)
-from PyQt5.QtCore import QTimer, QDateTime, Qt, QProcess, QPropertyAnimation
-from PyQt5.QtGui import QTextCursor, QColor, QTextCharFormat, QFont, QFontDatabase
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QTextEdit, QVBoxLayout, 
+    QScrollBar, QLabel, QMainWindow, QPushButton,
+    QHBoxLayout, QLineEdit, QGraphicsEffect, QGraphicsScale, QGraphicsOpacityEffect
+)
+from PyQt5.QtCore import (
+    QTimer, QDateTime, Qt, QProcess, 
+    QPropertyAnimation, QSize, QEasingCurve, 
+    QParallelAnimationGroup, QRect
+)
+from PyQt5.QtGui import (
+    QTextCursor, QColor, QTextCharFormat, 
+    QFont, QFontDatabase
+)
 import platform
 import psutil
 import datetime
@@ -48,8 +57,8 @@ class SplashScreen(QWidget):
         self.parent = parent
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        # self.setGeometry(0, 0, 1000, 415)
-        self.setFixedSize(1000, 415)
+        self.setGeometry(0, 0, 1000, 415)
+        
         
         self.colors = {
             'bg': QColor(30, 30, 30, 230),  
@@ -105,18 +114,40 @@ class SplashScreen(QWidget):
             
     def close_splash(self):
         
-        self.animation = QPropertyAnimation(self, b"windowOpacity")
-        self.animation.setDuration(500)
-        self.animation.setStartValue(1)
-        self.animation.setEndValue(0)
-        self.animation.finished.connect(self.close)
-        self.animation.start()
+        self.steps = 30
+        self.current_step = 0
+        self.start_width = self.width()
+        self.start_height = self.height()
+        self.start_x = self.x()
+        self.start_y = self.y()
+        
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.animate_collapse)
+        self.timer.start(16) 
+
+    def animate_collapse(self):
+       
+        self.current_step += 1
+        progress = self.current_step / self.steps
+        
+        new_width = int(self.start_width * (1 - progress))
+        new_height = self.start_height 
+        
+       
+        new_x = self.start_x + (self.start_width - new_width) // 2               
+        new_y = self.start_y 
         
         
-        if self.parent:
-            self.parent.show()
-
-
+        self.setGeometry(new_x, new_y, new_width, new_height)        
+      
+        self.setWindowOpacity(1.0 - progress)
+               
+        if self.current_step >= self.steps:
+            self.timer.stop()
+            self.close() 
+            if self.parent:
+                self.parent.show() 
+            
 class ArchTerminal(QWidget):
     def __init__(self):
         super().__init__()
@@ -312,6 +343,13 @@ class ArchTerminal(QWidget):
                         self.add_line("Нет доступных плагинов", 'highlight')
                 
                 show_plugin_help()
+                
+                
+            if command.startswith('welcome window '):
+                welcome_w = command[15:]  
+                self.welcome_window_functoin(welcome_w)
+                return    
+            
                     
             else:
                 self.process = QProcess(self)  
@@ -323,6 +361,36 @@ class ArchTerminal(QWidget):
                 
             logging.info(f' {TIME} - {command}')
 
+    
+    
+    def welcome_window_functoin(self, new_value):
+        env_file = '.env'
+        try:
+           
+            with open(env_file, 'r') as f:
+                lines = f.readlines()
+            
+            
+            updated = False
+            for i, line in enumerate(lines):
+                if line.startswith('WELCOME_WINDOW='):
+                    lines[i] = f'WELCOME_WINDOW={new_value}\n'
+                    updated = True
+                    break
+            
+            with open(env_file, 'w') as f:
+                f.writelines(lines)
+                
+            if new_value == '1':
+                new_value = new_value + '- True'
+                
+            if new_value == '0':
+                new_value = new_value + '- False'
+            
+            self.add_line(f"изменение значения welcome_window на {new_value}", 'highlight')
+            
+        except Exception as e:
+            self.add_line(f"Ошибка функции: {str(e)}", 'highlight')
     
     def load_plugins(self):
         
@@ -800,8 +868,16 @@ if __name__ == "__main__":
     title_bar.mouseMoveEvent = move_window
     title_bar.mousePressEvent = mouse_press_event
     
-    splash = SplashScreen(main_window)
-    splash.show()
+    window_welcome = os.getenv("WELCOME_WINDOW")
+    ww = str(window_welcome)
+    
+    if ww == '1':
+    
+        splash = SplashScreen(main_window)
+        splash.show()
+        
+    if ww == '0':
+        pass
     
     main_window.show()
     sys.exit(app.exec_())
