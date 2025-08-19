@@ -22,7 +22,9 @@ pip install PyQt5 psutil python-telegram-bot python-dotenv requests wmi
 - Создайте .env файл:
 - BOT_TOKEN=ваш_токен_бота
 - ALLOWED_CHAT_ID=ваш_id_в_телеграмме
-- CITY=название вашего или иного города 
+- CITY=название вашего или иного города
+- WELCOME_WINDOW=начальная заставка
+- POWERFUL_USER=полный доступ к командам (да/нет (0/1))
 
 3. Запуск:
 python "arch Linux main.py"
