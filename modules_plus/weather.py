@@ -1,5 +1,6 @@
 import requests
 from dotenv import load_dotenv 
+import os
 
 CITY = os.getenv("CITY")
 
@@ -22,5 +23,6 @@ def temp1():
             return temperature
     except:
         return 'N/A'
+
 
 
