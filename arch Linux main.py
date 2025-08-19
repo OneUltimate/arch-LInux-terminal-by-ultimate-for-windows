@@ -1,3 +1,7 @@
+
+
+
+
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QTextEdit, QVBoxLayout, 
@@ -35,7 +39,7 @@ from modules_plus.weather import *
 from modules_plus.pc_information import *
 from modules_plus.cheking_system import *
 from modules_plus.proxy_checker import * 
-from modules_plus.config import * 
+from config import * 
 from help_text import * 
 from plugins.terminal_plugin import *
 
@@ -46,103 +50,6 @@ load_dotenv()
 
 logging.basicConfig(filename='terminal.log', level=logging.INFO)
 
-
-class SplashScreen(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.parent = parent
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setGeometry(0, 0, 1000, 415)
-        
-        
-        self.colors = {
-            'bg': QColor(30, 30, 30, 230),  
-            'text': QColor("#54EBFF"),
-            'highlight': QColor('#34E2E2'),  
-        }
-        
-        
-        self.setStyleSheet(f"""
-            background-color: rgba{self.colors['bg'].getRgb()};
-            border-radius: 8px;
-            border: 1px solid {self.colors['highlight'].name()};
-        """)
-        
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        
-        font_id = QFontDatabase.addApplicationFont("VT323-Regular.ttf")  
-        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
-        
-        self.label = QLabel(self)
-        self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet(f"""
-            QLabel {{
-                color: {self.colors['text'].name()};
-                font-family: {font_family};
-                font-size: 60px;
-                
-            }}
-        """)
-        self.layout.addWidget(self.label)
-        
-       
-        self.username = os.getenv('USERNAME') or os.getenv('USER') or 'user'
-        self.text_to_type = f"welcome mr.{self.username} "
-        self.current_text = ""
-        self.char_index = 0
-        
-        
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.type_next_char)
-        self.timer.start(250) 
-        
-    def type_next_char(self):
-        if self.char_index < len(self.text_to_type):
-            self.current_text += self.text_to_type[self.char_index]
-            self.label.setText(self.current_text)
-            self.char_index += 1
-        else:
-            self.timer.stop()
-            
-            QTimer.singleShot(1200, self.close_splash)
-            
-    def close_splash(self):
-        
-        self.steps = 30
-        self.current_step = 0
-        self.start_width = self.width()
-        self.start_height = self.height()
-        self.start_x = self.x()
-        self.start_y = self.y()
-        
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.animate_collapse)
-        self.timer.start(16) 
-
-    def animate_collapse(self):
-       
-        self.current_step += 1
-        progress = self.current_step / self.steps
-        
-        new_width = int(self.start_width * (1 - progress))
-        new_height = self.start_height 
-        
-       
-        new_x = self.start_x + (self.start_width - new_width) // 2               
-        new_y = self.start_y 
-        
-        
-        self.setGeometry(new_x, new_y, new_width, new_height)        
-      
-        self.setWindowOpacity(1.0 - progress)
-               
-        if self.current_step >= self.steps:
-            self.timer.stop()
-            self.close() 
-            if self.parent:
-                self.parent.show() 
             
 class ArchTerminal(QWidget):
     def __init__(self):
@@ -247,12 +154,35 @@ class ArchTerminal(QWidget):
         
         user = os.getenv('USERNAME') or os.getenv('USER') or 'user'
         host = platform.node()
-        cursor.insertText(f"{user}@{host}:~{self.current_directory}$ ")
+        QTimer.singleShot(100, lambda: self.add_line(f"{user}@{host}:~{self.current_directory}$ ", 'prompt', auto_scroll=False))
+        
         
         
         self.terminal.setTextCursor(cursor)
         self.terminal.ensureCursorVisible()
+    
+    
+    
+    def try_command(self, command):
+        PW = os.getenv('POWERFUL_USER')
+        PW = str(PW)
+        if PW == '0':
+            
+            parts = command.split()
+            if not parts:
+                return False
         
+            if parts[0] not in TRY_NOT_POWERFUL_USER_COMMAND:
+                
+                TIME = QDateTime.currentDateTime().toString("HH:mm:ss")
+                self.add_line(f"{TIME} - {command}", 'input')
+                self.add_line("[!] command not ye", 'warning')
+                return False
+            else:
+                return True
+        else:
+            return True
+    
     def execute_command(self):
         command = self.input_line.text().strip()
         self.input_line.clear()
@@ -260,106 +190,119 @@ class ArchTerminal(QWidget):
         if not command:
             self.show_prompt()
             return
-            
-        self.command_history.append(command)
-        self.history_index = len(self.command_history)
         
-        TIME = QDateTime.currentDateTime().toString("HH:mm:ss")
-        self.add_line(f"{TIME} - {command}", 'input')
-        
-       
-        handled = False
-        for plugin in self.plugins:
-            if plugin.handle_command(command):
-                handled = True
-                break
-        
-        
-        if not handled:
-            if command.lower() in ['exit', 'quit']:
-                QApplication.quit()
-            elif command.startswith('cd '):
-                self.change_directory(command[3:].strip())
-            elif command == 'clear':
-                self.terminal.clear()
-                self.show_prompt()
-            elif command.startswith('!help'):
-                parts = command.split()
-                if len(parts) == 1:
-                    self.show_help_1()
-                else:
-                    try:
-                        page = int(parts[1])
-                        if page == 1:
-                            self.show_help_1()
-                        elif page == 2:
-                            self.show_help_2()
-                        elif page == 3:
-                            self.show_help_3()
-                        else:
-                            self.add_line("Доступны страницы 1-3. Показана страница 1", "highlight")
-                            self.show_help_1()
-                    except ValueError:
-                        self.add_line("Используйте: !help <1-3> (page) ", "highlight")
-                        self.show_prompt()
+        if self.try_command(command) == True:
                         
-            elif command == "startbot":
-                self.start_telegram_bot()
-            elif command == 'stopbot':        
-                self.stop_bot()
-            elif command == "restart":                                              
-                self.display_system_info()
-            elif command == "!help dsi":
-                self.add_line('display system information (DSI) - main function of the script', 'normal')
-                self.show_prompt()
+            self.command_history.append(command)
+            self.history_index = len(self.command_history)
             
-            elif command == "rp":
-                self.plugins = []
-                self.load_plugins()
-                self.add_line("Плагины перезагружены", 'normal') 
-                
-                
-            if command == 'plugin help':
-                def show_plugin_help():
-                    
-                    plugin_helps = []
-                    for plugin in self.plugins:
-                        if hasattr(plugin, 'get_help'):
-                            help_text = plugin.get_help()
-                            if help_text:
-                                plugin_helps.append(help_text)
-                    
-                    
-                    if plugin_helps:
-                        self.add_line("=== Доступные плагины ===", 'highlight')
-                        for i, help_text in enumerate(plugin_helps, 1):
-                            self.add_line(f"\n🔹 Плагин {i}:", 'normal')
-                            self.add_line(help_text, 'normal')
+            TIME = QDateTime.currentDateTime().toString("HH:mm:ss")
+            self.add_line(f"{TIME} - {command}", 'input')
+            
+        
+            handled = False
+            for plugin in self.plugins:
+                if plugin.handle_command(command):
+                    handled = True
+                    break
+            
+            
+            if not handled:
+                if command.lower() in ['exit', 'quit']:
+                    QApplication.quit()
+                elif command.startswith('cd '):
+                    self.change_directory(command[3:].strip())
+                elif command == 'clear':
+                    self.terminal.clear()
+                    self.show_prompt()
+                elif command.startswith('!help'):
+                    parts = command.split()
+                    if len(parts) == 1:
+                        self.show_help_1()
                     else:
-                        self.add_line("Нет доступных плагинов", 'highlight')
+                        try:
+                            page = int(parts[1])
+                            if page == 1:
+                                self.show_help_1()
+                            elif page == 2:
+                                self.show_help_2()
+                            elif page == 3:
+                                self.show_help_3()
+                            else:
+                                self.add_line("Доступны страницы 1-3. Показана страница 1", "highlight")
+                                self.show_help_1()
+                        except ValueError:
+                            self.add_line("Используйте: !help <1-3> (page) ", "highlight")
+                            self.show_prompt()
+                            
+                elif command == "startbot":
+                    self.start_telegram_bot()
+                elif command == 'stopbot':        
+                    self.stop_bot()
+                elif command == "restart":                                              
+                    self.display_system_info()
+                elif command == "!help dsi":
+                    self.add_line('display system information (DSI) - main function of the script', 'normal')
+                    self.show_prompt()
                 
-                show_plugin_help()
-                
-                
-            if command.startswith('welcome window '):
-                welcome_w = command[15:]  
-                self.welcome_window_functoin(welcome_w)
-                return    
-            
+                elif command == "rp":
+                    self.plugins = []
+                    self.load_plugins()
+                    self.add_line("Плагины перезагружены", 'normal') 
                     
-            else:
-                self.process = QProcess(self)  
-                self.process.readyReadStandardOutput.connect(self.handle_stdout)
-                self.process.readyReadStandardError.connect(self.handle_stderr)
-                self.process.finished.connect(self.command_finished)
-                self.process.start(command)
-      
+                    
+                if command == 'plugin help':
+                    def show_plugin_help():
+                        
+                        plugin_helps = []
+                        for plugin in self.plugins:
+                            if hasattr(plugin, 'get_help'):
+                                help_text = plugin.get_help()
+                                if help_text:
+                                    plugin_helps.append(help_text)
+                        
+                        
+                        if plugin_helps:
+                            self.add_line("=== Доступные плагины ===", 'highlight')
+                            for i, help_text in enumerate(plugin_helps, 1):
+                                self.add_line(f"\n🔹 Плагин {i}:", 'normal')
+                                self.add_line(help_text, 'normal')
+                        else:
+                            self.add_line("Нет доступных плагинов", 'highlight')
+                    
+                    show_plugin_help()
+                    
+                    
+                if command.startswith('welcome window '):
+                    welcome_w = command[15:]  
+                    self.welcome_window_functoin(welcome_w)
+                    return    
                 
-            logging.info(f' {TIME} - {command}')
+                if command.startswith('powerful '):
+                    powerful_u = command[9:]
+                    self.powerful_user_functoin(powerful_u)
+                    return
+                
+                        
+                else:
+                    self.process = QProcess(self)  
+                    self.process.readyReadStandardOutput.connect(self.handle_stdout)
+                    self.process.readyReadStandardError.connect(self.handle_stderr)
+                    self.process.finished.connect(self.command_finished)
+                    self.process.start(command)
+        
+                    
+                logging.info(f' {TIME} - {command}')
 
     
     
     def welcome_window_functoin(self, new_value):
+        
+        
+        if new_value not in ['0', '1']:
+            self.add_line(fr'[error] "{new_value}" - неккоректное значение функции', 'error')
+            return
+        
         env_file = '.env'
         try:
            
@@ -378,15 +321,51 @@ class ArchTerminal(QWidget):
                 f.writelines(lines)
                 
             if new_value == '1':
-                new_value = new_value + '- True'
+                new_value = new_value + ' - True'
                 
             if new_value == '0':
-                new_value = new_value + '- False'
+                new_value = new_value + ' - False'
             
             self.add_line(f"изменение значения welcome_window на {new_value}", 'highlight')
             
         except Exception as e:
-            self.add_line(f"Ошибка функции: {str(e)}", 'highlight')
+            self.add_line(f"[error] Ошибка функции: {str(e)}", 'error')
+            
+            
+    def powerful_user_functoin(self, new_value):
+        
+        
+            if new_value not in ['0', '1']:
+                self.add_line(fr'[error] "{new_value}" - неккоректное значение функции', 'error')
+                return
+            
+            env_file = '.env'
+            try:
+            
+                with open(env_file, 'r') as f:
+                    lines = f.readlines()
+                
+                
+                updated = False
+                for i, line in enumerate(lines):
+                    if line.startswith('POWERFUL_USER='):
+                        lines[i] = f'POWERFUL_USER={new_value}\n'
+                        updated = True
+                        break
+                
+                with open(env_file, 'w') as f:
+                    f.writelines(lines)
+                    
+                if new_value == '1':
+                    new_value = new_value + ' - True'
+                    
+                if new_value == '0':
+                    new_value = new_value + ' - False'
+                
+                self.add_line(f"изменение значения powerful_user на {new_value} \n <> Перезапустите терминал", 'highlight')
+                
+            except Exception as e:
+                self.add_line(f"[error] Ошибка функции: {str(e)}", 'error')
     
     def load_plugins(self):
         
@@ -395,8 +374,9 @@ class ArchTerminal(QWidget):
         
         plugins_dir.mkdir(exist_ok=True)
         
-  
-        self.add_line(f"🔍 Поиск плагинов в: {plugins_dir}", 'normal')
+        
+        QTimer.singleShot(10000, lambda: self.add_line(f"🔍 Поиск плагинов в: {plugins_dir}", 'normal', auto_scroll=False))
+        
         print(f"[DEBUG] Plugins dir: {plugins_dir}")
         
         loaded_count = 0
@@ -463,137 +443,12 @@ class ArchTerminal(QWidget):
         summary = f"📊 Загружено плагинов: {loaded_count}"
         if error_count > 0:
             summary += f", ошибок: {error_count}"
-        self.add_line(summary, 'normal')
+        QTimer.singleShot(12000, lambda: self.add_line(summary, 'normal'))
         
         
         if loaded_count == 0:
             self.add_line('', 'normal')
-    
-    def start_telegram_bot(self):
-            
-            
-            # if self.telegram_bot:
-            #     self.add_line("Бот уже запущен!", 'highlight')
-            #     return
-            
-            if not self.bot_token:
-                self.add_line("Ошибка: Токен бота не найден в .env файле!", 'highlight')
-                return
-                
-            if not self.allowed_chat_id:
-                self.add_line("Ошибка: ALLOWED_CHAT_ID не задан в .env файле!", 'highlight')
-                return
-
-            self.add_line("Запускаю Telegram бота...", 'normal')
-
-            def bot_thread():
-                try:
-                    updater = Updater(self.bot_token)
-                    dispatcher = updater.dispatcher
-                    
-                    
-                    def info_handler(update: Update, context: CallbackContext):
-                        if str(update.effective_chat.id) != self.allowed_chat_id:
-                            update.message.reply_text("⚠️ Доступ запрещён!")
-                            return
-                        
-                        try:
-                            system_info = self.get_system_info()
-                            update.message.reply_text(system_info)
-                        except Exception as e:
-                            update.message.reply_text(f"Ошибка: {str(e)}")
-
-                    
-                    def start_handler(update: Update, context: CallbackContext):
-                        if str(update.effective_chat.id) == self.allowed_chat_id:
-                            update.message.reply_text(
-                                "✅ Бот готов к работе!\n"
-                                "Используйте /info для получения данных системы"
-                            )
-                        else:
-                            update.message.reply_text("🚫 У вас нет доступа к этому боту")
-                            
-                    # def restart_terminal(update: Update, context: CallbackContext):
-                    #     if str(update.effective_chat.id) == self.allowed_chat_id:
-                    #         update.message.reply_text("перезапуск...")
-                            
-
-                    #         update.message.reply_text("ок.")
-                    #     else:
-                    #         update.message.reply_text("🚫 У вас нет доступа к этому боту")
-                    def restart_dsi(update: Update, context: CallbackContext):
-                        if str(update.effective_chat.id) == self.allowed_chat_id:
-                            update.message.reply_text("перезапуск dsi")
-                            self.display_system_info()
-                                
-                        else:
-                            update.message.reply_text("🚫 У вас нет доступа к этому боту")
-                            
-                    
-                    
-                    
-                    dispatcher.add_handler(CommandHandler("info", info_handler))
-                    dispatcher.add_handler(CommandHandler("start", start_handler))
-                    # dispatcher.add_handler(CommandHandler("restartterminal", restart_terminal))
-                    dispatcher.add_handler(CommandHandler("restart", restart_dsi))
-                    
-                    
-                    
-                    
-                    
-                    updater.start_polling()
-                    self.telegram_bot = updater
-                    self.add_line(f"Бот запущен для чата ID: {self.allowed_chat_id}", 'normal')
-                    
-                    
-                    
-                except Exception as e:
-                    self.add_line(f"Ошибка запуска бота: {str(e)}", 'highlight')
-
-            
-            threading.Thread(target=bot_thread, daemon=True).start()
-    
-    def get_system_info(self):
         
-        temper_cpu = cputemp()
-        uptime = datetime.timedelta(seconds=time.time()-psutil.boot_time())
-        uptime_str = str(uptime).split('.')[0]
-        
-        
-        
-        info = [
-            f"🖥️ Система: {platform.system()} {platform.release()}",
-            f"⏱️ Время работы: {uptime_str}",
-            f"💾 Память: {psutil.virtual_memory().percent}% used {monitor_memory()}",
-            f"🔥 CPU: {psutil.cpu_percent()}% | {psutil.cpu_count()} cores, {temper_cpu}",
-            f"🌐 IP: {self.get_ip_address()},",
-            f"🔋 Батарея: {get_battery_info()}"  
-        ]
-        return "\n".join(info)
-    
-    def stop_bot(self):
-        if not self.telegram_bot:
-            self.add_line("Бот не запущен!", 'highlight')
-        else:
-            self.add_line("Останавливаю бота...", 'normal')
-            try:
-                
-                temp_updater = Updater(self.bot_token)
-                
-                
-                temp_updater.bot.send_message(
-                    chat_id=self.allowed_chat_id,
-                    text="🛑 Бот отключается по команде из терминала"
-                )
-                
-                
-                self.telegram_bot.stop()
-                self.telegram_bot = None
-                
-                self.add_line("Бот успешно остановлен", 'normal')
-                
-            except Exception as e:
-                self.add_line(f"Ошибка при остановке бота: {str(e)}", 'highlight')
             
     def change_directory(self, path):
         try:
@@ -698,31 +553,38 @@ class ArchTerminal(QWidget):
             scrollbar.setValue(scrollbar.maximum())
             
    
-    
     def update_line(self, prefix, new_value, color=None):
+        cursor = self.terminal.textCursor()
+        scrollbar = self.terminal.verticalScrollBar()
+        old_scroll_pos = scrollbar.value()
         
-        text = self.terminal.toPlainText()
-        pos = text.rfind(prefix)
+        full_text = self.terminal.toPlainText()
+        
+        pos = full_text.rfind(prefix)
         
         if pos == -1:
-            self.add_line(f"                                      |{prefix}{new_value}", color or 'normal', auto_scroll=False)
+    
+            self.add_line(f"                                      |{prefix}{new_value}", 
+                        color or 'normal', 
+                        auto_scroll=False)
         else:
-            scrollbar = self.terminal.verticalScrollBar()
-            old_scroll_pos = scrollbar.value()
+           
+            cursor.setPosition(pos)
+            cursor.movePosition(QTextCursor.StartOfLine)
             
-            cursor = self.terminal.textCursor()
-            cursor.setPosition(pos + len(prefix))
             cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor)
+            
             cursor.removeSelectedText()
             
-            if color:
-                format = QTextCharFormat()
-                format.setForeground(self.colors[color])
-                cursor.setCharFormat(format)
+            format = QTextCharFormat()
+            format.setForeground(self.colors[color] if color else self.colors['normal'])
+            cursor.setCharFormat(format)
             
-            cursor.insertText(new_value)
-            scrollbar.setValue(old_scroll_pos)
-    
+            cursor.insertText(f"                                      |{prefix}{new_value}\n")
+        
+        scrollbar.setValue(old_scroll_pos)    
+   
     def display_system_info(self):
         
         
