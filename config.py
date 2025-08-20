@@ -29,13 +29,34 @@ ALL_COLORS = {
             'highlight': QColor('#34E2E2'),
             'normal': QColor("#54EBFF"),
             'time': QColor('#34E2E2'),
-            'bg': QColor(30, 30, 30, 230), 
+            
             'network': QColor('#34E2E2'),
             'input': QColor("#FFFFFFFF"),
             'prompt': QColor("#068B9A"),
             'error': QColor("#D90000"),
             'warning': QColor("#EAFF00")
         }
+
+
+BAGROUND_COLOR = {
+    'defoult': {'bg': QColor(30, 30, 30, 230)},      # Классический темно-серый
+    'white': {'bg': QColor(240, 240, 240, 230)},     # Мягкий белый 
+    'matrix': {'bg': QColor(0, 100, 0, 230)},        # Приглушенный зеленый
+    'midnight': {'bg': QColor(25, 25, 50, 230)},     # Темно-синий 
+    'charcoal': {'bg': QColor(50, 50, 50, 230)},     # Угольный 
+    'slate': {'bg': QColor(60, 70, 80, 230)},        # Сланцевый серо-синий
+    'burgundy': {'bg': QColor(60, 0, 20, 230)},      # Темно-бордовый
+    'forest': {'bg': QColor(20, 40, 20, 230)},       # Лесной зеленый
+    'cocoa': {'bg': QColor(50, 40, 30, 230)},        # Кофейный/шоколадный
+    'storm': {'bg': QColor(40, 40, 60, 230)},        # Грозовое небо
+    'amethyst': {'bg': QColor(40, 20, 60, 230)},     # Темный аметист
+    'obsidian': {'bg': QColor(10, 10, 15, 230)},     # Практически черный
+    'sepia': {'bg': QColor(60, 50, 40, 230)}         # Сепия 
+}
+
+
+
+
 
 
 TITLE_BAR_STYLE = """
