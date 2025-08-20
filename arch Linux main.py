@@ -635,7 +635,7 @@ class ArchTerminal(QWidget):
         self.add_line(f"     /__/  \/  \__\___________|       |GPU: {gpu_info}", auto_scroll=False)
         self.update_line(f"MEM: ", monitor_memory() or "N/A", 'highlight')
         self.add_line(f"                                      |Proxy: {proxy_tf}", 'network', auto_scroll=False)
-        self.add_line(f"prealph6                              |IP Address: {ip_address}", 'network', auto_scroll=False)
+        self.add_line(f"prealpha - 07                         |IP Address: {ip_address}", 'network', auto_scroll=False)
         self.update_line("Network name: ", self.get_network_name() or "N/A", 'highlight')
         
         
@@ -739,3 +739,4 @@ if __name__ == "__main__":
     
     main_window.show()
     sys.exit(app.exec_())
+
