@@ -20,8 +20,10 @@
    pip install PyQt5 psutil requests python-telegram-bot python-dotenv && pip install wmi
    ```
    
-   Или юзайте команду с файлом [requirements.txt]
-   ``` pip install -r requirements.txt ```
+   Или юзайте команду с файлом [requirements.txt]:
+   ```
+   pip install -r requirements.txt
+   ```
    
 
 3. Настройка:
