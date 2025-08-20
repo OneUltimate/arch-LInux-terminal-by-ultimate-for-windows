@@ -21,7 +21,7 @@
    </tt>
    
    Или юзайте команду с файлом [requirements.txt]
-   >>> <tt>  pip install -r requirements.txt </tt> <<< 
+   <tt>  pip install -r requirements.txt </tt> 
    
 
 3. Настройка:
