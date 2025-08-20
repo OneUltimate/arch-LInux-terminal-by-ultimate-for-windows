@@ -16,10 +16,12 @@
 ## 🚀 фаст старт
 
 1. Установите зависимости:
-   <code> 
+   <tt> 
    pip install PyQt5 psutil requests python-telegram-bot python-dotenv && pip install wmi
-   </code> 
-   предлагаю воспользоваться файлом >>> <code> pip install -r requirements.txt </code> 
+   </tt>
+   
+   Или юзайте команду с файлом [requirements.txt]
+   >>> <tt>  pip install -r requirements.txt </tt> <<< 
    
 
 3. Настройка:
