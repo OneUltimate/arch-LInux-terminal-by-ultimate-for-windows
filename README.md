@@ -16,9 +16,9 @@
 ## 🚀 фаст старт
 
 1. Установите зависимости:
-pip install PyQt5 psutil python-telegram-bot python-dotenv requests wmi
+   '''pip install PyQt5 psutil requests python-telegram-bot python-dotenv && pip install wmi'''
 
-2. Настройка:
+3. Настройка:
 - Создайте .env файл:
 - BOT_TOKEN=ваш_токен_бота
 - ALLOWED_CHAT_ID=ваш_id_в_телеграмме
