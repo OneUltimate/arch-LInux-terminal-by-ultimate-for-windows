@@ -16,7 +16,7 @@
 ## 🚀 фаст старт
 
 1. Установите зависимости:
-   <tt> 
+    <tt> 
    pip install PyQt5 psutil requests python-telegram-bot python-dotenv && pip install wmi
    </tt>
    
