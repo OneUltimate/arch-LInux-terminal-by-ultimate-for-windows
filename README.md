@@ -16,7 +16,11 @@
 ## 🚀 фаст старт
 
 1. Установите зависимости:
-   '''pip install PyQt5 psutil requests python-telegram-bot python-dotenv && pip install wmi'''
+   '''
+   pip install PyQt5 psutil requests python-telegram-bot python-dotenv && pip install wmi
+   '''
+   предлагаю воспользоваться файлом >>> 
+   
 
 3. Настройка:
 - Создайте .env файл:
