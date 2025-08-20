@@ -1,5 +1,5 @@
 
-# arch-LInux-terminal-by-ultimate-for-windows, prealphver06
+# arch linux interpreter for windows, prealpha-07
 ![Terminal Screenshot](scrns.png) 
 ![RUNTERMINAL](RUN.png)
 
