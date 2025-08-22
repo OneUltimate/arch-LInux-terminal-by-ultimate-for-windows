@@ -1,6 +1,6 @@
 
 # arch linux interpreter for windows, prealpha-07
-![Terminal Screenshot](scrns.png) 
+![Terminal Screenshot](scr1ns.png) 
 ![RUNTERMINAL](RUN.png)
 
 ## *ru* 
