@@ -1,7 +1,6 @@
 
 # arch linux interpreter for windows, prealpha-07
 ![Terminal Screenshot](1scrns.png) 
-![RUNTERMINAL](RUN.png)
 
 ## *ru* 
 Терминал (интерпритатор коммандных строк) в стиле Arch Linux для Windows с мониторингом показателей и интегрированным Telegram-ботом
