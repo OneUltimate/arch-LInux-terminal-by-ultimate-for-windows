@@ -56,7 +56,7 @@ socket, sys, python-telegram-bot, python-dotenv
 *Python 3.12.4+ | Windows 10/11*
 **Для полного функционала требуются права администратора**
 
-## Communication Map
+## 📜 Communication Map
 
 ![Map](comunication_map.png)
 
