@@ -57,7 +57,8 @@ socket, sys, python-telegram-bot, python-dotenv
 **Для полного функционала требуются права администратора**
 
 ## Communication Map
-[Map](comunication file's.png)
+
+![Map](comunication_map.png)
 
 ## 📅 История версий:
 prealpha-v0.1 (24.07.2025): Базовая логика
