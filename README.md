@@ -1,5 +1,5 @@
 
-# arch linux interpreter for windows, prealpha-07
+# arch linux interpreter for windows, prealpha-08
 ![Terminal Screenshot](1scrns.png) 
 
 ## *ru* 
