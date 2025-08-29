@@ -13,7 +13,7 @@ from data.modules_plus.pc_information import (cputemp, cputempfortg, get_gpu_inf
                                          get_gpu_info_resolution, monitor_memory, nameCPU)
 from data.modules_plus.proxy_checker import get_system_proxy
 from data.modules_plus.weather import temp1
-
+from notification import show_notification
 
 class SystemInfoDisplay:
     def __init__(self, arch_terminal, colors):
@@ -37,9 +37,6 @@ class SystemInfoDisplay:
         
         shell = psutil.Process().parent().name()
         
-        mem = psutil.virtual_memory()
-        mem_used = mem.used / (1024**3) 
-        mem_total = mem.total / (1024**3) 
         
         cpu_info = str(nameCPU[:-2])
         gpu_info = get_gpu_info()
@@ -107,3 +104,18 @@ class SystemInfoDisplay:
     def update_memory_inf(self):
         self.arch_terminal.update_line("MEM: ", monitor_memory() or "N/A")
         QTimer.singleShot(5000, self.update_memory_inf)
+        
+        memory = psutil.virtual_memory()
+        used_percent = memory.percent
+         
+        used_percent = int(used_percent) 
+         
+        print(used_percent)
+        
+        if used_percent > 95:
+            
+            show_notification(used_percent)
+                
+        
+        
+        
