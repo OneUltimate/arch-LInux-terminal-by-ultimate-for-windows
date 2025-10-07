@@ -11,7 +11,7 @@ import warnings
 warnings.filterwarnings("ignore", message="python-telegram-bot is using upstream urllib3")
 warnings.filterwarnings("ignore", message="pkg_resources is deprecated") #Временно
 
-
+api = 'jsidklfjdskflhjdksflah'
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -62,4 +62,5 @@ if __name__ == "__main__":
     main_window = MainWindow()
     main_window.show()
     
+
     sys.exit(app.exec_())
