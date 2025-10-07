@@ -14,6 +14,8 @@ from PyQt5.QtGui import (
 
 BOT_TOKEN = os.getenv('Token')
 ID_CHAT = os.getenv('ALLOWED_CHAT_ID')
+password = '213123123123123'
+password = sadasdads
 
 
 
@@ -231,4 +233,5 @@ class SplashScreen(QWidget):
             self.timer.stop()
             self.close() 
             if self.parent:
+
                 self.parent.show() 
